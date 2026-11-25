@@ -37,11 +37,11 @@ AGENTS: List[Agent] = [
     ),
     Agent(
         id="marketing",
-        name="Marketing Assistant",
-        role="Content strategy and campaign planning.",
-        status="Coming soon",
-        enabled=False,
-        navigation_target=None
+        name="Marketing Agent",
+        role="Marketing strategist that analyzes campaigns, optimizes content, and provides template-based marketing briefs.",
+        status="Demo",
+        enabled=True,
+        navigation_target="Marketing Agent"
     ),
     Agent(
         id="developer",
