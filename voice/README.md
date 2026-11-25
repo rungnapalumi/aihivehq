@@ -101,21 +101,21 @@ The E2E test captures screenshots to `/tmp` (not committed):
 ### OpenAI Pricing (as of 2026)
 - **Whisper (STT)**: $0.006 per minute
 - **GPT-4o-mini**: $0.00015/1K input tokens, $0.0006/1K output tokens
-- **TTS-1**: $0.015 per 1M characters
+- **TTS-1**: $15 per 1M characters
 
 ### Per-Turn Estimate (voice input + response)
 - Audio transcription (10 seconds): ~$0.001
-- LLM response (200 tokens in/out): ~$0.00015
-- TTS response (100 characters): ~$0.0000015
-- **Total per voice turn**: ~$0.0012 USD
+- LLM response (~150 input, ~80 output tokens): ~$0.00007
+- TTS response (100 characters): ~$0.0015
+- **Total per voice turn**: ~$0.0026 USD (0.26 cents)
 
 ### Session Projections
-- **10 voice turns**: ~$0.012 (about 1 cent)
-- **50 voice turns** (session max): ~$0.06 (6 cents)
+- **10 voice turns**: ~$0.026 (about 2.6 cents)
+- **50 voice turns** (session max): ~$0.13 (13 cents)
 
 ### Monthly Estimates
-- **100 users** (5 sessions/month, 10 turns each): ~$6/month
-- **1,000 users** (5 sessions/month, 10 turns each): ~$60/month
+- **100 users** (5 sessions/month, 10 turns each): ~$13/month
+- **1,000 users** (5 sessions/month, 10 turns each): ~$130/month
 
 **Cost Controls**:
 - Maximum 50 turns per session

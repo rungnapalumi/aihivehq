@@ -283,9 +283,9 @@ Keep responses SHORT and conversational (2-3 sentences) since this is voice inte
         # Get audio bytes
         audio_bytes = response.content
         
-        # Calculate cost (TTS-1 is $0.015 per 1M characters)
+        # Calculate cost (TTS-1 is $15 per 1M characters)
         characters = len(text)
-        cost_usd = (characters / 1_000_000.0) * 0.015
+        cost_usd = (characters / 1_000_000.0) * 15.0
         
         cost_info = {
             "model": "tts-1",
