@@ -205,7 +205,7 @@ def show_action_plan_creation_form(session: CoachingSession):
     draft = st.session_state.draft_plan
     
     st.markdown("""
-    <div style='background: #fef3c7; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;'>
+    <div style='background: rgba(245, 158, 11, 0.15); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #f59e0b; color: #e2e8f0;'>
     <p style='margin: 0; font-size: 0.9rem;'><strong>✏️ Please review and edit:</strong> Make your Next Action specific (verb + what + scope) and Success Indicator measurable (number/frequency). Set your Target Date below.</p>
     </div>
     """, unsafe_allow_html=True)
