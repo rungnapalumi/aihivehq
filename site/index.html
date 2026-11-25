@@ -642,31 +642,194 @@
         .founder-section {
             background: var(--navy-900);
             border-top: 1px solid rgba(255, 255, 255, 0.05);
+            scroll-margin-top: 96px;
         }
         
         .founder-content {
-            max-width: 700px;
+            max-width: 880px;
             margin: 0 auto;
             text-align: center;
         }
         
+        .founder-identity {
+            margin-bottom: var(--space-10);
+        }
+        
         .founder-name {
-            font-size: var(--text-2xl);
-            font-weight: 600;
-            color: var(--slate-50);
-            margin-bottom: var(--space-2);
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            margin-bottom: var(--space-3);
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .founder-title {
             font-size: var(--text-lg);
-            color: var(--slate-400);
-            margin-bottom: var(--space-6);
+            font-weight: 500;
+            color: var(--slate-300);
+            letter-spacing: 0.02em;
+            margin-bottom: var(--space-3);
+        }
+        
+        .founder-tagline {
+            font-size: var(--text-base);
+            font-weight: 500;
+            color: var(--slate-200);
+            letter-spacing: 0.01em;
+            line-height: 1.7;
+            max-width: 36rem;
+            margin: 0 auto;
         }
         
         .founder-bio {
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: left;
+        }
+        
+        .founder-bio p {
             font-size: var(--text-base);
             color: var(--slate-400);
             line-height: 1.8;
+            margin-bottom: var(--space-5);
+            overflow-wrap: break-word;
+        }
+        
+        .founder-bio p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .founder-quote {
+            position: relative;
+            max-width: 48rem;
+            margin: var(--space-10) auto;
+            padding: var(--space-8) var(--space-10);
+            text-align: center;
+            background: var(--gradient-surface);
+            border-radius: var(--radius-xl);
+        }
+        
+        .founder-quote::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.65) 0%, rgba(124, 58, 237, 0.5) 50%, rgba(37, 99, 235, 0.25) 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        
+        .founder-quote p,
+        .founder-quote blockquote {
+            font-size: var(--text-xl);
+            font-style: italic;
+            font-weight: 500;
+            color: var(--slate-100);
+            line-height: 1.65;
+            letter-spacing: 0.01em;
+            margin: 0;
+            overflow-wrap: break-word;
+            text-wrap: pretty;
+        }
+        
+        .founder-credentials {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--space-5);
+            margin-top: var(--space-12);
+            text-align: left;
+        }
+        
+        .credential-card {
+            min-width: 0;
+            display: flex;
+            gap: var(--space-4);
+            align-items: flex-start;
+            padding: var(--space-6);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: var(--radius-lg);
+            transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .credential-card:hover {
+            border-color: rgba(37, 99, 235, 0.28);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .credential-icon {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: var(--radius-md);
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .credential-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: #fff;
+            fill: none;
+            stroke-width: 1.75;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        
+        .credential-body {
+            min-width: 0;
+        }
+        
+        .credential-body strong {
+            display: block;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--slate-50);
+            line-height: 1.45;
+            margin-bottom: var(--space-1);
+        }
+        
+        .credential-body p {
+            font-size: var(--text-sm);
+            color: var(--slate-400);
+            line-height: 1.6;
+            margin: 0;
+            overflow-wrap: break-word;
+        }
+        
+        .founder-mission {
+            max-width: 700px;
+            margin: var(--space-12) auto 0;
+            padding-top: var(--space-10);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: left;
+        }
+        
+        .founder-mission-label {
+            font-size: var(--text-xs);
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--slate-500);
+            text-align: center;
+            margin-bottom: var(--space-4);
+        }
+        
+        .founder-mission p {
+            font-size: var(--text-base);
+            color: var(--slate-400);
+            line-height: 1.8;
+            overflow-wrap: break-word;
         }
         
         /* Footer */
@@ -804,6 +967,52 @@
             
             .footer-content {
                 grid-template-columns: 1fr;
+            }
+            
+            .founder-name {
+                font-size: var(--text-2xl);
+            }
+            
+            .founder-identity {
+                margin-bottom: var(--space-8);
+            }
+            
+            .founder-quote {
+                margin: var(--space-8) auto;
+                padding: var(--space-6) var(--space-5);
+            }
+            
+            .founder-quote p,
+            .founder-quote blockquote {
+                font-size: var(--text-lg);
+            }
+            
+            .founder-credentials {
+                margin-top: var(--space-8);
+                gap: var(--space-4);
+            }
+            
+            .credential-card {
+                padding: var(--space-5);
+            }
+            
+            .founder-mission {
+                margin-top: var(--space-8);
+                padding-top: var(--space-8);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .founder-credentials {
+                grid-template-columns: 1fr;
+            }
+            
+            .founder-tagline {
+                font-size: var(--text-sm);
+            }
+            
+            .founder-tagline .tagline-break {
+                display: block;
             }
         }
         
@@ -1187,17 +1396,95 @@
     <section class="section founder-section" id="about">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">About AIHiveHQ</h2>
+                <h2 class="section-title">Meet Our Founder</h2>
             </div>
             
             <div class="founder-content">
-                <h3 class="founder-name">Rungnapa Mukdasanit</h3>
-                <p class="founder-title">Founder</p>
-                <p class="founder-bio">
-                    AIHiveHQ is building practical AI tools for personal and professional growth. 
-                    Our mission is to help people think clearly, act confidently, and grow daily through 
-                    specialized AI agents that augment human capabilities rather than replace them.
-                </p>
+                <div class="founder-identity">
+                    <h3 class="founder-name">Rungnapa Mukdasanit</h3>
+                    <p class="founder-title">Founder, AIHiveHQ</p>
+                    <p class="founder-tagline">Engineer. Finance Leader. <span class="tagline-break">Professional Coach. AI Innovator.</span></p>
+                </div>
+                
+                <div class="founder-bio">
+                    <p>With nearly three decades of professional experience spanning engineering, finance, business strategy, and leadership, Rungnapa brings a multidisciplinary perspective to the world of artificial intelligence.</p>
+                    <p>She holds a Bachelor's degree in Engineering from SIIT, Thammasat University, an MBA from Sasin School of Management, and an Associate Certified Coach (ACC) credential from the International Coaching Federation (ICF).</p>
+                    <p>Her passion for technology and human development has led her to explore AI application development, intelligent automation, and specialized AI agents that address real-world challenges.</p>
+                    <p>She founded AIHiveHQ with a simple belief: artificial intelligence should empower people to think better, learn faster, work smarter, and realize their full potential.</p>
+                </div>
+                
+                <blockquote class="founder-quote">
+                    <p>“AI should not replace human potential. It should amplify&nbsp;it.”</p>
+                </blockquote>
+                
+                <div class="founder-bio">
+                    <p>Through AIHiveHQ, she aims to make intelligent technology practical, accessible, and meaningful for individuals and businesses worldwide.</p>
+                </div>
+                
+                <div class="founder-credentials" role="list">
+                    <article class="credential-card" role="listitem">
+                        <div class="credential-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M22 10v6"></path>
+                                <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path>
+                                <path d="M2.6 9.08a1 1 0 0 0 0 1.84l8.57 3.91a2 2 0 0 0 1.66 0l8.57-3.91a1 1 0 0 0 0-1.84L12.83 5.18a2 2 0 0 0-1.66 0Z"></path>
+                            </svg>
+                        </div>
+                        <div class="credential-body">
+                            <strong>Bachelor's degree in Engineering</strong>
+                            <p>SIIT, Thammasat University</p>
+                        </div>
+                    </article>
+                    
+                    <article class="credential-card" role="listitem">
+                        <div class="credential-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M3 21h18"></path>
+                                <path d="M6 21V10"></path>
+                                <path d="M10 21V10"></path>
+                                <path d="M14 21V10"></path>
+                                <path d="M18 21V10"></path>
+                                <path d="M3 10h18"></path>
+                                <path d="M2 10 12 4l10 6"></path>
+                            </svg>
+                        </div>
+                        <div class="credential-body">
+                            <strong>MBA</strong>
+                            <p>Sasin School of Management</p>
+                        </div>
+                    </article>
+                    
+                    <article class="credential-card" role="listitem">
+                        <div class="credential-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="5.5"></circle>
+                                <path d="M8.4 13.4 7 21l5-3 5 3-1.4-7.6"></path>
+                            </svg>
+                        </div>
+                        <div class="credential-body">
+                            <strong>Associate Certified Coach (ACC)</strong>
+                            <p>International Coaching Federation (ICF)</p>
+                        </div>
+                    </article>
+                    
+                    <article class="credential-card" role="listitem">
+                        <div class="credential-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M12 7v5l3.5 2"></path>
+                            </svg>
+                        </div>
+                        <div class="credential-body">
+                            <strong>Nearly three decades of professional experience</strong>
+                            <p>Spanning engineering, finance, business strategy, and leadership</p>
+                        </div>
+                    </article>
+                </div>
+                
+                <div class="founder-mission">
+                    <p class="founder-mission-label">About AIHiveHQ</p>
+                    <p>AIHiveHQ is building practical AI tools for personal and professional growth. Our mission is to help people think clearly, act confidently, and grow daily through specialized AI agents that augment human capabilities rather than replace them.</p>
+                </div>
             </div>
         </div>
     </section>
