@@ -69,7 +69,7 @@ def test_voice_assistant_smoke(streamlit_app):
         time.sleep(3)
         
         # Verify page loaded
-        expect(page.get_by_text("AIHive Voice Assistant")).to_be_visible(timeout=10000)
+        expect(page.get_by_text("🎤 AIHive Voice Assistant")).to_be_visible(timeout=10000)
         
         # Check for mode indicator (Demo or Real AI)
         content = page.content()
