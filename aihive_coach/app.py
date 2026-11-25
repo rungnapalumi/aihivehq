@@ -106,6 +106,13 @@ with st.sidebar:
         st.rerun()
     
     st.markdown("---")
+    st.markdown("### Developer")
+    
+    if st.button("🛠️ Developer Assistant", use_container_width=True, key="nav_developer"):
+        st.session_state.navigation = "Developer Assistant"
+        st.rerun()
+    
+    st.markdown("---")
     
     if st.button("🔒 Privacy & Data", use_container_width=True, key="nav_privacy"):
         st.session_state.navigation = "Privacy"
@@ -404,6 +411,15 @@ elif page == "My Campaigns":
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
         from marketing.campaigns_list_page import show_campaigns_list_page
     show_campaigns_list_page()
+elif page == "Developer Assistant":
+    try:
+        from developer.developer_page import show_developer_page
+    except ImportError:
+        import sys
+        import os
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        from developer.developer_page import show_developer_page
+    show_developer_page()
 elif page == "Privacy":
     from privacy_page import show_privacy_notice
     show_privacy_notice()

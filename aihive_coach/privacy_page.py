@@ -38,10 +38,14 @@ def show_privacy_notice():
     - Draft Content: Your draft copy (when provided)
     - Campaign Output: Outlines, checklists, caption variants, metrics
     
+    **AIHive Developer Assistant:**
+    - Session-only history in your browser tab (code reviews, debug help, architecture drafts)
+    - Not written to the SQLite database — cleared when the session ends
+    
     **Common:**
     - User ID: Anonymous browser-based identifier (no login required)
     
-    **Storage Location:** SQLite database (`aihive_coach.db`) on the server
+    **Storage Location:** SQLite database (`aihive_coach.db`) on the server (Coach / Tutor / Marketing). Developer history is browser session only.
     """)
     
     # Ephemeral Warning
