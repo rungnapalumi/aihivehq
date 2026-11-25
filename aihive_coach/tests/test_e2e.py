@@ -6,6 +6,7 @@ import pytest
 import subprocess
 import time
 import os
+import sys
 from playwright.sync_api import sync_playwright, expect
 
 
@@ -15,19 +16,22 @@ APP_URL = f"http://localhost:{STREAMLIT_PORT}"
 
 @pytest.fixture(scope="module")
 def streamlit_app():
-    """Start Streamlit app for testing"""
+    """Start Streamlit app for testing (demo mode — no API key)."""
     env = os.environ.copy()
     env["APP_ENV"] = "test"
     env["DATABASE_PATH"] = "test_e2e.db"
+    env.pop("OPENAI_API_KEY", None)
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    env["PYTHONPATH"] = repo_root
     
     # Start Streamlit in background
     # Use absolute path to aihive_coach/app.py
     app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     app_path = os.path.join(app_dir, "app.py")
     process = subprocess.Popen(
-        ["streamlit", "run", app_path, "--server.port", str(STREAMLIT_PORT), 
-         "--server.headless", "true"],
-        cwd=app_dir,
+        [sys.executable, "-m", "streamlit", "run", app_path, "--server.port", str(STREAMLIT_PORT), 
+         "--server.headless", "true", "--server.fileWatcherType", "none"],
+        cwd=repo_root,
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
