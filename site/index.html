@@ -646,13 +646,62 @@
         }
         
         .founder-content {
-            max-width: 880px;
+            max-width: 960px;
             margin: 0 auto;
             text-align: center;
         }
         
-        .founder-identity {
+        .founder-intro {
+            display: grid;
+            grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+            gap: var(--space-10);
+            align-items: start;
             margin-bottom: var(--space-10);
+            text-align: left;
+        }
+        
+        .founder-portrait {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            justify-self: center;
+            width: 100%;
+            max-width: 280px;
+        }
+        
+        .founder-portrait-glow {
+            position: absolute;
+            left: 50%;
+            top: 12%;
+            width: 120%;
+            height: 90%;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse at 50% 55%, rgba(37, 99, 235, 0.38) 0%, rgba(124, 58, 237, 0.22) 40%, rgba(37, 99, 235, 0.06) 64%, transparent 75%);
+            filter: blur(22px);
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .founder-portrait picture,
+        .founder-portrait img {
+            position: relative;
+            z-index: 1;
+            display: block;
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 22px 36px rgba(0, 0, 0, 0.38));
+        }
+        
+        .founder-identity {
+            margin-bottom: 0;
+            text-align: left;
+            padding-top: 4.5rem;
+        }
+        
+        .founder-intro .founder-tagline {
+            margin-left: 0;
+            margin-right: 0;
         }
         
         .founder-name {
@@ -973,8 +1022,27 @@
                 font-size: var(--text-2xl);
             }
             
-            .founder-identity {
+            .founder-intro {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                text-align: center;
+                gap: var(--space-6);
                 margin-bottom: var(--space-8);
+            }
+            
+            .founder-portrait {
+                max-width: 220px;
+            }
+            
+            .founder-identity {
+                margin-bottom: 0;
+                text-align: center;
+                padding-top: 0;
+            }
+            
+            .founder-intro .founder-tagline {
+                margin-left: auto;
+                margin-right: auto;
             }
             
             .founder-quote {
@@ -1400,10 +1468,19 @@
             </div>
             
             <div class="founder-content">
-                <div class="founder-identity">
-                    <h3 class="founder-name">Rungnapa Mukdasanit</h3>
-                    <p class="founder-title">Founder, AIHiveHQ</p>
-                    <p class="founder-tagline">Engineer. Finance Leader. <span class="tagline-break">Professional Coach. AI Innovator.</span></p>
+                <div class="founder-intro">
+                    <div class="founder-portrait">
+                        <div class="founder-portrait-glow" aria-hidden="true"></div>
+                        <picture>
+                            <source type="image/webp" srcset="assets/rungnapa-mukdasanit.webp">
+                            <img src="assets/rungnapa-mukdasanit.png" alt="Rungnapa Mukdasanit, Founder of AIHiveHQ" width="469" height="800">
+                        </picture>
+                    </div>
+                    <div class="founder-identity">
+                        <h3 class="founder-name">Rungnapa Mukdasanit</h3>
+                        <p class="founder-title">Founder, AIHiveHQ</p>
+                        <p class="founder-tagline">Engineer. Finance Leader. <span class="tagline-break">Professional Coach. AI Innovator.</span></p>
+                    </div>
                 </div>
                 
                 <div class="founder-bio">
