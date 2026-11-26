@@ -106,11 +106,11 @@ def test_coming_soon_agents():
     # assert marketing.status == "Coming soon"
     # assert marketing.enabled is False
     
-    developer = get_agent_by_id("developer")
-    assert developer is not None, "Developer agent should exist"
-    assert developer.status == "Coming soon"
-    assert developer.enabled is False
-    
+    # Note: Developer is now Demo (enabled) — see test_developer_agent_details
+    # developer = get_agent_by_id("developer")
+    # assert developer.status == "Coming soon"
+    # assert developer.enabled is False
+
     finance = get_agent_by_id("finance")
     assert finance is not None, "Finance agent should exist"
     assert finance.status == "Coming soon"
@@ -118,6 +118,15 @@ def test_coming_soon_agents():
     # Verify finance disclaimer in role
     assert "education" in finance.role.lower() or "budgeting" in finance.role.lower(), \
         "Finance agent should mention education/budgeting"
+
+
+def test_developer_agent_details():
+    """Test Developer agent is Demo and linked into the app"""
+    developer = get_agent_by_id("developer")
+    assert developer is not None, "Developer agent should exist"
+    assert developer.status == "Demo"
+    assert developer.enabled is True
+    assert developer.navigation_target == "Developer Assistant"
 
 
 def test_agent_uniqueness():

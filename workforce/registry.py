@@ -47,9 +47,9 @@ AGENTS: List[Agent] = [
         id="developer",
         name="Developer Assistant",
         role="Code review, debugging, and architecture guidance.",
-        status="Coming soon",
-        enabled=False,
-        navigation_target=None
+        status="Demo",
+        enabled=True,
+        navigation_target="Developer Assistant"
     ),
     Agent(
         id="finance",
