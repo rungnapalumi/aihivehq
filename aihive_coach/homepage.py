@@ -21,10 +21,10 @@ def show_homepage():
         <h1 style='font-size: 3rem; font-weight: 700; margin-bottom: 1rem; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>
             AIHiveHQ
         </h1>
-        <h2 style='font-size: 1.5rem; color: #64748b; font-weight: 400; margin-bottom: 2rem;'>
+        <h2 style='font-size: 1.5rem; color: #cbd5e1; font-weight: 400; margin-bottom: 2rem;'>
             AI Software Platform for Personal & Professional Growth
         </h2>
-        <p style='font-size: 1.1rem; color: #475569; max-width: 700px; margin: 0 auto 2rem auto; line-height: 1.6;'>
+        <p style='font-size: 1.1rem; color: #94a3b8; max-width: 700px; margin: 0 auto 2rem auto; line-height: 1.6;'>
             Multiple AI agents working together to help you think clearly, act confidently, and grow daily.
         </p>
     </div>
@@ -53,12 +53,12 @@ def show_homepage():
     
     with col1:
         st.markdown(f"""
-        <div style='background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 2rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'>
-            <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;'>
-                <h3 style='margin: 0; color: #1e293b;'>🧠 AIHive Coach</h3>
-                <span style='background: {"#10b981" if coach_status == "Available" else "#f59e0b"}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;'>{coach_status}</span>
+        <div style='background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 2rem; height: 100%;'>
+            <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; gap: 0.75rem;'>
+                <h3 style='margin: 0; color: #f8fafc;'>🧠 AIHive Coach</h3>
+                <span style='background: {"rgba(16, 185, 129, 0.15)" if coach_status == "Available" else "rgba(245, 158, 11, 0.15)"}; color: {"#10b981" if coach_status == "Available" else "#f59e0b"}; border: 1px solid {"rgba(16, 185, 129, 0.3)" if coach_status == "Available" else "rgba(245, 158, 11, 0.3)"}; padding: 0.25rem 0.75rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 600; display: inline-block;'>{coach_status}</span>
             </div>
-            <p style='color: #64748b; margin-bottom: 1rem; line-height: 1.6;'>
+            <p style='color: #94a3b8; margin-bottom: 1rem; line-height: 1.6;'>
                 Personal development & goal-setting coach. GROW-inspired conversations, action plans, and progress tracking.
             </p>
             <p style='color: #94a3b8; font-size: 0.875rem; font-style: italic; margin-bottom: 1rem;'>
@@ -77,14 +77,14 @@ def show_homepage():
     with col2:
         # Get API key status for Tutor
         tutor_status = "Demo"  # Always show Demo for now
-        
+
         st.markdown(f"""
-        <div style='background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 2rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'>
-            <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;'>
-                <h3 style='margin: 0; color: #1e293b;'>📚 AIHive Tutor</h3>
-                <span style='background: #f59e0b; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;'>{tutor_status}</span>
+        <div style='background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 2rem; height: 100%;'>
+            <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; gap: 0.75rem;'>
+                <h3 style='margin: 0; color: #f8fafc;'>📚 AIHive Tutor</h3>
+                <span style='background: {"rgba(16, 185, 129, 0.15)" if tutor_status == "Available" else "rgba(245, 158, 11, 0.15)"}; color: {"#10b981" if tutor_status == "Available" else "#f59e0b"}; border: 1px solid {"rgba(16, 185, 129, 0.3)" if tutor_status == "Available" else "rgba(245, 158, 11, 0.3)"}; padding: 0.25rem 0.75rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 600; display: inline-block;'>{tutor_status}</span>
             </div>
-            <p style='color: #64748b; margin-bottom: 1rem; line-height: 1.6;'>
+            <p style='color: #94a3b8; margin-bottom: 1rem; line-height: 1.6;'>
                 Study tutor that helps you understand topics step by step. Interactive lessons with check-for-understanding questions.
             </p>
             <p style='color: #94a3b8; font-size: 0.875rem; font-style: italic; margin-bottom: 1rem;'>
@@ -92,7 +92,7 @@ def show_homepage():
             </p>
         </div>
         """, unsafe_allow_html=True)
-        
+
         if st.button("Launch Tutor →", key="tutor_launch", use_container_width=True):
             st.session_state.navigation = "Start Learning"
             st.rerun()
@@ -102,12 +102,12 @@ def show_homepage():
     
     with col1:
         st.markdown("""
-        <div style='background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 2rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'>
-            <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;'>
-                <h3 style='margin: 0; color: #1e293b;'>💰 Finance Agent</h3>
-                <span style='background: #94a3b8; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;'>Coming Soon</span>
+        <div style='background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 2rem; height: 100%;'>
+            <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; gap: 0.75rem;'>
+                <h3 style='margin: 0; color: #f8fafc;'>💰 Finance Agent</h3>
+                <span style='background: rgba(100, 116, 139, 0.15); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); padding: 0.25rem 0.75rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 600; display: inline-block;'>Coming&nbsp;Soon</span>
             </div>
-            <p style='color: #64748b; margin-bottom: 1rem; line-height: 1.6;'>
+            <p style='color: #94a3b8; margin-bottom: 1rem; line-height: 1.6;'>
                 Financial planning and analysis assistant. Budget tracking, investment guidance, and financial goal setting.
             </p>
             <p style='color: #94a3b8; font-size: 0.875rem; font-style: italic; margin-bottom: 1rem;'>
@@ -119,12 +119,12 @@ def show_homepage():
     
     with col2:
         st.markdown("""
-        <div style='background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 2rem; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'>
-            <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;'>
-                <h3 style='margin: 0; color: #1e293b;'>💻 Developer Agent</h3>
-                <span style='background: #94a3b8; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;'>Coming Soon</span>
+        <div style='background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 2rem; height: 100%;'>
+            <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; gap: 0.75rem;'>
+                <h3 style='margin: 0; color: #f8fafc;'>💻 Developer Agent</h3>
+                <span style='background: rgba(100, 116, 139, 0.15); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); padding: 0.25rem 0.75rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 600; display: inline-block;'>Coming&nbsp;Soon</span>
             </div>
-            <p style='color: #64748b; margin-bottom: 1rem; line-height: 1.6;'>
+            <p style='color: #94a3b8; margin-bottom: 1rem; line-height: 1.6;'>
                 Code assistance and development support. Code review, debugging help, and architecture guidance.
             </p>
             <p style='color: #94a3b8; font-size: 0.875rem; font-style: italic; margin-bottom: 1rem;'>
@@ -137,7 +137,7 @@ def show_homepage():
     # Future Vision Card
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
     st.markdown("""
-    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 2rem; text-align: center; color: white;'>
+    <div style='background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); border-radius: 16px; padding: 2rem; text-align: center; color: white;'>
         <h3 style='margin: 0 0 1rem 0; color: white;'>🌐 AI Workforce - Future Vision</h3>
         <p style='margin: 0; font-size: 1.1rem; opacity: 0.95;'>
             Coordinated multi-agent systems for complex business workflows. Coming in future releases.
@@ -156,10 +156,10 @@ def show_homepage():
     with col2:
         st.markdown("""
         <div style='text-align: center; padding: 1rem;'>
-            <p style='font-size: 1.1rem; color: #475569; line-height: 1.8; margin-bottom: 1.5rem;'>
+            <p style='font-size: 1.1rem; color: #cbd5e1; line-height: 1.8; margin-bottom: 1.5rem;'>
                 AIHiveHQ is an AI software company building practical tools for personal and professional growth.
             </p>
-            <p style='font-size: 1rem; color: #64748b; line-height: 1.6;'>
+            <p style='font-size: 1rem; color: #94a3b8; line-height: 1.6;'>
                 <strong>Founded by:</strong> Rungnapa Mukdasanit, Founder<br>
                 <strong>Strategy:</strong> Revenue First. Scale the AI Army Later.<br>
                 <strong>Mission:</strong> Help people think clearly, act confidently, and grow daily.
