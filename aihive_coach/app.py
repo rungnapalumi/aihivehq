@@ -106,6 +106,13 @@ with st.sidebar:
         st.rerun()
     
     st.markdown("---")
+    st.markdown("### Finance")
+    
+    if st.button("💰 Finance Assistant", use_container_width=True, key="nav_finance"):
+        st.session_state.navigation = "Finance Assistant"
+        st.rerun()
+    
+    st.markdown("---")
     
     if st.button("🔒 Privacy & Data", use_container_width=True, key="nav_privacy"):
         st.session_state.navigation = "Privacy"
@@ -404,6 +411,17 @@ elif page == "My Campaigns":
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
         from marketing.campaigns_list_page import show_campaigns_list_page
     show_campaigns_list_page()
+elif page == "Finance Assistant":
+    # Finance Assistant page
+    try:
+        from finance.finance_page import show_finance_page
+    except ImportError:
+        # Fallback: add parent to path
+        import sys
+        import os
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        from finance.finance_page import show_finance_page
+    show_finance_page()
 elif page == "Privacy":
     from privacy_page import show_privacy_notice
     show_privacy_notice()

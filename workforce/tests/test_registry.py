@@ -89,6 +89,18 @@ def test_tutor_agent_details():
     assert tutor.navigation_target == "Start Learning", "Tutor should have correct navigation target"
 
 
+def test_finance_agent_details():
+    """Test Finance agent is Demo and linked to the Finance Assistant page"""
+    finance = get_agent_by_id("finance")
+    
+    assert finance is not None, "Finance agent should exist"
+    assert finance.status == "Demo", "Finance should have Demo status"
+    assert finance.enabled is True, "Finance should be enabled"
+    assert finance.navigation_target == "Finance Assistant", \
+        "Finance should navigate to Finance Assistant"
+    assert "education" in finance.role.lower() or "budgeting" in finance.role.lower()
+
+
 def test_coming_soon_agents():
     """Test coming soon agents are disabled"""
     all_agents = get_all_agents()
@@ -111,10 +123,9 @@ def test_coming_soon_agents():
     assert developer.status == "Coming soon"
     assert developer.enabled is False
     
+    # Finance is now Demo (enabled) — see test_finance_agent_details
     finance = get_agent_by_id("finance")
     assert finance is not None, "Finance agent should exist"
-    assert finance.status == "Coming soon"
-    assert finance.enabled is False
     # Verify finance disclaimer in role
     assert "education" in finance.role.lower() or "budgeting" in finance.role.lower(), \
         "Finance agent should mention education/budgeting"

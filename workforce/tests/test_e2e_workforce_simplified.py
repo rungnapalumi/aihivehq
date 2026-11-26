@@ -84,8 +84,8 @@ def test_coming_soon_buttons_disabled(page: Page, app_url: str):
             coming_soon_count += 1
             assert button.is_disabled(), f"Coming Soon button should be disabled: {text}"
     
-    # Marketing is now enabled, so only 2 Coming Soon agents (Developer, Finance)
-    assert coming_soon_count == 2, f"Should have 2 Coming Soon buttons, found {coming_soon_count}"
+    # Finance is now Demo; only Developer remains Coming Soon
+    assert coming_soon_count == 1, f"Should have 1 Coming Soon button, found {coming_soon_count}"
 
 
 def test_recent_activity_section(page: Page, app_url: str):

@@ -55,9 +55,9 @@ AGENTS: List[Agent] = [
         id="finance",
         name="Finance Assistant",
         role="Personal budgeting and expense tracking (education only).",
-        status="Coming soon",
-        enabled=False,
-        navigation_target=None
+        status="Demo",
+        enabled=True,
+        navigation_target="Finance Assistant"
     ),
 ]
 
