@@ -310,14 +310,14 @@ def show_coach_landing_page():
     # Journey Steps
     st.markdown("### 1️⃣ User Goal")
     st.markdown("""
-    <div style='background: #f8fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #2563eb;'>
+    <div style='background: rgba(37, 99, 235, 0.12); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #2563eb; color: #e2e8f0;'>
     <p style='margin: 0; font-size: 1.05rem;'><em>"I want to become more confident speaking up in team meetings."</em></p>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("### 2️⃣ Coaching Conversation")
     st.markdown("""
-    <div style='background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;'>
+    <div style='background: #1a2238; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(255, 255, 255, 0.08); color: #e2e8f0;'>
     <p style='margin: 0 0 0.5rem 0;'><strong>Coach:</strong> "What specifically makes it difficult to speak up?"</p>
     <p style='margin: 0 0 0.5rem 0;'><strong>User:</strong> "I worry I'll say something wrong or that my ideas aren't good enough."</p>
     <p style='margin: 0 0 0.5rem 0;'><strong>Coach:</strong> "What evidence do you have that your ideas aren't good enough?"</p>
@@ -327,14 +327,14 @@ def show_coach_landing_page():
     
     st.markdown("### 3️⃣ Key Insight")
     st.markdown("""
-    <div style='background: #fef3c7; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #f59e0b;'>
+    <div style='background: rgba(245, 158, 11, 0.15); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #f59e0b; color: #e2e8f0;'>
     <p style='margin: 0;'><strong>Insight:</strong> "I'm letting fear of judgment stop me, but my actual track record shows my contributions are valued. The barrier is my assumption, not reality."</p>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("### 4️⃣ Action Plan")
     st.markdown("""
-    <div style='background: #f0fdf4; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #10b981;'>
+    <div style='background: rgba(16, 185, 129, 0.15); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #10b981; color: #e2e8f0;'>
     <p style='margin: 0 0 0.5rem 0;'><strong>Goal:</strong> Share at least one idea in every team meeting</p>
     <p style='margin: 0 0 0.5rem 0;'><strong>Next Action:</strong> Prepare one talking point before tomorrow's standup and share it in the first 10 minutes</p>
     <p style='margin: 0 0 0.5rem 0;'><strong>Target Date:</strong> Next week</p>
@@ -344,7 +344,7 @@ def show_coach_landing_page():
     
     st.markdown("### 5️⃣ Progress Review")
     st.markdown("""
-    <div style='background: #f8fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #7c3aed;'>
+    <div style='background: rgba(124, 58, 237, 0.15); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #7c3aed; color: #e2e8f0;'>
     <p style='margin: 0 0 0.5rem 0;'><strong>After One Week:</strong></p>
     <p style='margin: 0;'>"I shared ideas in 3 out of 4 meetings this week! It still feels a bit scary, but it's getting easier. My manager even built on one of my suggestions. I'm realizing my voice does add value."</p>
     </div>

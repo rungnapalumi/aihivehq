@@ -74,7 +74,7 @@ def show_action_plan_card(plan: ActionPlan, expanded: bool = False):
         status_color = "#ef4444"
     else:
         status_badge = "🔄 In Progress"
-        status_color = "#2563eb"
+        status_color = "#60a5fa"  # blue-400: WCAG AA on navy-900 ( #2563eb is 3.2:1 )
     
     # Card container — first plan can start expanded for mobile readability
     with st.expander(f"**{plan.goal[:60]}{'...' if len(plan.goal) > 60 else ''}**", expanded=expanded):
