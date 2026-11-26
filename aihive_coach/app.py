@@ -106,6 +106,13 @@ with st.sidebar:
         st.rerun()
     
     st.markdown("---")
+    st.markdown("### Developer")
+    
+    if st.button("🛠️ Developer Assistant", use_container_width=True, key="nav_developer"):
+        st.session_state.navigation = "Developer Assistant"
+        st.rerun()
+    
+    st.markdown("---")
     st.markdown("### Finance")
     
     if st.button("💰 Finance Assistant", use_container_width=True, key="nav_finance"):
@@ -151,50 +158,41 @@ def show_legacy_homepage():
 def show_coach_landing_page():
     """AIHive Coach Product Landing Page"""
     
-    # Mobile-specific CSS to reduce hero padding and ensure CTA is above the fold
+    # Mobile-only: tighten hero so primary Start CTA fits above the fold (375x667)
     st.markdown("""
     <style>
     @media (max-width: 768px) {
         .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
+            padding-top: 0.35rem !important;
+            padding-bottom: 0.75rem !important;
         }
         h1 {
-            font-size: 1.75rem !important;
-            margin-bottom: 0.5rem !important;
+            font-size: 1.45rem !important;
+            margin-bottom: 0.2rem !important;
+            margin-top: 0 !important;
         }
-        .stSubheader {
-            font-size: 1rem !important;
-            margin-bottom: 0.5rem !important;
+        .stSubheader, [data-testid="stHeadingWithActionElements"] p {
+            font-size: 0.95rem !important;
+            margin-bottom: 0.25rem !important;
+        }
+        div[data-testid="stVerticalBlock"] > div {
+            gap: 0.35rem !important;
         }
     }
     </style>
-    """, unsafe_allow_html=True)
-    
-    # Hero - reduced padding on mobile
-    st.markdown("""
-    <div style='text-align: center; padding: 1rem 0 0.5rem 0;'>
-    <style>
-    @media (max-width: 768px) {
-        .mobile-hero { padding: 0.5rem 0 0.25rem 0 !important; }
-    }
-    </style>
-    </div>
     """, unsafe_allow_html=True)
     
     st.title("🧠 AIHive Coach")
     st.subheader("Think Clearly. Act Confidently. Grow Daily.")
     
-    # Intro
-    # Prominent CTA FIRST - above fold on mobile
-    st.markdown("<div style='height: 0.25rem;'></div>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Prominent CTA FIRST — must be fully visible without scrolling on mobile
+    col1, col2, col3 = st.columns([0.5, 3, 0.5])
     with col2:
         if st.button("🚀 Start Your First Session", use_container_width=True, type="primary", key="start_first_top"):
             st.session_state.navigation = "Start Coaching"
             st.rerun()
     
-    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
     
     # Intro text changes based on mode
     if config.is_demo_mode():
@@ -286,10 +284,23 @@ def show_coach_landing_page():
             st.session_state.navigation = "Start Coaching"
             st.rerun()
     
-    # Mobile navigation helper
-    st.caption("📱 Mobile? Use the ☰ menu (top-left) to navigate")
+    # Mobile quick navigation (avoids relying only on the collapsed sidebar)
+    with st.expander("📱 Quick Navigation", expanded=False):
+        nav_cols = st.columns(3)
+        with nav_cols[0]:
+            if st.button("🏠 Home", key="mobile_nav_home_landing", use_container_width=True):
+                st.session_state.navigation = "Home"
+                st.rerun()
+        with nav_cols[1]:
+            if st.button("📋 My Plans", key="mobile_nav_plans_landing", use_container_width=True):
+                st.session_state.navigation = "My Action Plans"
+                st.rerun()
+        with nav_cols[2]:
+            if st.button("🔒 Privacy", key="mobile_nav_privacy_landing", use_container_width=True):
+                st.session_state.navigation = "Privacy"
+                st.rerun()
     
-    st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
     st.markdown("---")
     
     # Example Coaching Journey
@@ -411,6 +422,15 @@ elif page == "My Campaigns":
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
         from marketing.campaigns_list_page import show_campaigns_list_page
     show_campaigns_list_page()
+elif page == "Developer Assistant":
+    try:
+        from developer.developer_page import show_developer_page
+    except ImportError:
+        import sys
+        import os
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        from developer.developer_page import show_developer_page
+    show_developer_page()
 elif page == "Finance Assistant":
     # Finance Assistant page
     try:

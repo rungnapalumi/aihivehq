@@ -188,54 +188,63 @@ def show_lesson_interface():
         st.rerun()
 
 
+def build_session_summary_view(session: StudySession) -> dict:
+    """
+    Pure view-model for the end-of-lesson summary.
+    Keeps correct/incorrect counts and practice questions available for UI + tests.
+    """
+    return {
+        "questions_correct": int(session.questions_answered_correctly or 0),
+        "questions_incorrect": int(session.questions_answered_incorrectly or 0),
+        "concepts_covered": int(session.chunks_completed or 0),
+        "practice_questions": list(session.practice_questions or []),
+        "summary_text": session.summary_text or "",
+        "topic": session.topic,
+    }
+
+
 def show_session_summary(session: StudySession):
-    """Display end-of-session summary"""
+    """Display end-of-session summary with counts + practice questions near the top (mobile-friendly)."""
+    view = build_session_summary_view(session)
+
     st.success("🎉 Lesson Complete!")
-    
-    st.markdown("## 📝 Session Summary")
-    
-    # Render summary with proper markdown support
-    with st.container():
-        st.markdown(f"""
-        <div style='background: #f0fdf4; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #10b981;'>
-        <h3>What you learned:</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Use st.markdown to properly render markdown in the summary
-        st.markdown(session.summary_text)
-    
-    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-    
-    # Stats
+
+    # Stats first so correct/incorrect counts are visible on mobile without scrolling past a long summary
+    st.markdown("## 📊 Your Results")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Questions Correct", session.questions_answered_correctly)
+        st.metric("Questions Correct", view["questions_correct"])
     with col2:
-        st.metric("Questions Incorrect", session.questions_answered_incorrectly)
+        st.metric("Questions Incorrect", view["questions_incorrect"])
     with col3:
-        st.metric("Concepts Covered", session.chunks_completed)
-    
-    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-    
-    # Practice questions
+        st.metric("Concepts Covered", view["concepts_covered"])
+
+    st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
+
+    # Practice questions next — required on the mobile summary screenshot
     st.markdown("## 🎯 Practice Questions for Review")
-    st.info("Review these questions later to reinforce what you learned!")
-    
-    for i, q in enumerate(session.practice_questions, 1):
-        st.markdown(f"**{i}.** {q}")
-    
-    st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-    
-    # Action buttons
+    if view["practice_questions"]:
+        for i, q in enumerate(view["practice_questions"], 1):
+            st.markdown(f"**{i}.** {q}")
+    else:
+        st.info("No practice questions were generated for this session.")
+
+    st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
+
+    st.markdown("## 📝 What you learned")
+    if view["summary_text"]:
+        st.markdown(view["summary_text"])
+    else:
+        st.caption("Summary text is not available for this session.")
+
+    st.markdown("<div style='height: 1.25rem;'></div>", unsafe_allow_html=True)
+
     col1, col2 = st.columns(2)
-    
     with col1:
         if st.button("📚 Start New Topic", use_container_width=True, type="primary"):
             st.session_state.current_tutor_session_id = None
             st.session_state.show_tutor_summary = False
             st.rerun()
-    
     with col2:
         if st.button("📖 View My Study Sessions", use_container_width=True):
             st.session_state.navigation = "My Study Sessions"

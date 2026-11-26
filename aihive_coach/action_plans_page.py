@@ -57,31 +57,27 @@ def show_action_plans():
         
         return
     
-    # Display plans
-    for plan in plans:
-        show_action_plan_card(plan)
+    # Display plans — expand the newest plan so goal/insight/action are readable on mobile
+    for index, plan in enumerate(plans):
+        show_action_plan_card(plan, expanded=(index == 0))
 
 
-def show_action_plan_card(plan: ActionPlan):
+def show_action_plan_card(plan: ActionPlan, expanded: bool = False):
     """Display a single action plan card"""
     
-    # Determine status
-    is_overdue = plan.target_date < date.today() and not plan.is_completed
-    is_upcoming = plan.target_date >= date.today() and not plan.is_completed
-    
-    # Status indicator
+    # Determine status (target_date may be unset)
     if plan.is_completed:
         status_badge = "✅ Completed"
         status_color = "#10b981"
-    elif is_overdue:
+    elif plan.target_date and plan.target_date < date.today():
         status_badge = "⚠️ Overdue"
         status_color = "#ef4444"
     else:
         status_badge = "🔄 In Progress"
         status_color = "#2563eb"
     
-    # Card container
-    with st.expander(f"**{plan.goal[:60]}{'...' if len(plan.goal) > 60 else ''}**", expanded=False):
+    # Card container — first plan can start expanded for mobile readability
+    with st.expander(f"**{plan.goal[:60]}{'...' if len(plan.goal) > 60 else ''}**", expanded=expanded):
         
         st.markdown(f"<span style='color: {status_color}; font-weight: bold;'>{status_badge}</span>", 
                    unsafe_allow_html=True)
@@ -111,15 +107,17 @@ def show_plan_view(plan: ActionPlan):
     
     with col1:
         st.markdown("### 📅 Target Date")
-        st.markdown(f"**{plan.target_date.strftime('%B %d, %Y')}**")
-        
-        days_until = (plan.target_date - date.today()).days
-        if days_until > 0:
-            st.caption(f"({days_until} days from now)")
-        elif days_until == 0:
-            st.caption("(Today!)")
+        if plan.target_date:
+            st.markdown(f"**{plan.target_date.strftime('%B %d, %Y')}**")
+            days_until = (plan.target_date - date.today()).days
+            if days_until > 0:
+                st.caption(f"({days_until} days from now)")
+            elif days_until == 0:
+                st.caption("(Today!)")
+            else:
+                st.caption(f"({abs(days_until)} days ago)")
         else:
-            st.caption(f"({abs(days_until)} days ago)")
+            st.markdown("**Not set**")
     
     with col2:
         st.markdown("### 🎉 Success Indicator")
@@ -182,7 +180,11 @@ def show_edit_form(plan: ActionPlan):
         goal = st.text_area("🎯 My Goal", value=plan.goal, height=100)
         key_insight = st.text_area("💡 My Key Insight", value=plan.key_insight, height=100)
         next_action = st.text_area("✅ My Next Action", value=plan.next_action, height=100)
-        target_date = st.date_input("📅 Target Date", value=plan.target_date, min_value=date.today())
+        target_date = st.date_input(
+            "📅 Target Date",
+            value=plan.target_date or date.today(),
+            min_value=date.today(),
+        )
         success_indicator = st.text_area("🎉 Success Indicator", value=plan.success_indicator, height=100)
         
         col1, col2 = st.columns(2)

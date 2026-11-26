@@ -14,6 +14,22 @@ from marketing.database import marketing_db
 
 def show_privacy_notice():
     """Display privacy notice and data management"""
+
+    # Mobile quick navigation (sidebar can be off-screen on phones)
+    with st.expander("📱 Quick Navigation", expanded=False):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("🏠 Home", key="mobile_nav_home_privacy", use_container_width=True):
+                st.session_state.navigation = "Home"
+                st.rerun()
+        with col2:
+            if st.button("💡 Coach", key="mobile_nav_coach_privacy", use_container_width=True):
+                st.session_state.navigation = "AIHive Coach"
+                st.rerun()
+        with col3:
+            if st.button("📋 My Plans", key="mobile_nav_plans_privacy", use_container_width=True):
+                st.session_state.navigation = "My Action Plans"
+                st.rerun()
     
     st.title("🔒 Privacy & Data")
     
@@ -38,10 +54,14 @@ def show_privacy_notice():
     - Draft Content: Your draft copy (when provided)
     - Campaign Output: Outlines, checklists, caption variants, metrics
     
+    **AIHive Developer Assistant:**
+    - Session-only history in your browser tab (code reviews, debug help, architecture drafts)
+    - Not written to the SQLite database — cleared when the session ends
+    
     **Common:**
     - User ID: Anonymous browser-based identifier (no login required)
     
-    **Storage Location:** SQLite database (`aihive_coach.db`) on the server
+    **Storage Location:** SQLite database (`aihive_coach.db`) on the server (Coach / Tutor / Marketing). Developer history is browser session only.
     """)
     
     # Ephemeral Warning
