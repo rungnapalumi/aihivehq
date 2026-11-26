@@ -42,10 +42,14 @@ temp-*.m4a
 # SQLite databases
 *.db
 
-# Screenshot artifacts (test output should go to /tmp or gitignored paths)
+# Screenshot artifacts (test output should go to /tmp or gitignored paths — never commit PNGs)
+*.png
+aihive_coach/screenshots/
 /*_desktop_*.png
 /*_mobile_*.png
 tutor_*.png
 workforce_*.png
 marketing_*.png
 developer_*.png
+voice_*.png
+coach_*.png

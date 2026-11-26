@@ -25,11 +25,6 @@ class Campaign(BaseModel):
     caption_variants: Optional[List[str]] = None
     metrics_to_track: Optional[List[str]] = None
     
-    # Metadata
+    # Metadata (datetime serializes to ISO-8601 by default in Pydantic v2)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }

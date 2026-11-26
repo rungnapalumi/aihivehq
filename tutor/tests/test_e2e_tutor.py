@@ -1,6 +1,6 @@
 """
-E2E test for AIHive Tutor using Playwright
-Tests the complete tutor flow and captures real screenshots
+E2E test for AIHive Tutor using Playwright (demo mode, no API key).
+Captures mobile proof screenshots to /tmp (never into the repo).
 """
 import pytest
 import subprocess
@@ -9,167 +9,178 @@ import os
 import sys
 from playwright.sync_api import sync_playwright, expect
 
-# Test configuration
-STREAMLIT_PORT = 8502
+STREAMLIT_PORT = 8503
 BASE_URL = f"http://localhost:{STREAMLIT_PORT}"
-SCREENSHOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SCREENSHOT_DIR = "/tmp/aihive_screenshots"
 
 
 @pytest.fixture(scope="module")
 def streamlit_app():
-    """Start Streamlit app for testing"""
-    # Kill any existing streamlit on this port
-    subprocess.run(f"pkill -f 'streamlit.*{STREAMLIT_PORT}'", shell=True)
+    """Start Streamlit app for testing in demo mode (no API key)."""
+    subprocess.run(f"pkill -f 'streamlit.*{STREAMLIT_PORT}' || true", shell=True)
     time.sleep(1)
-    
-    # Start Streamlit from the root directory
-    app_path = os.path.join(SCREENSHOT_DIR, "aihive_coach", "app.py")
+
+    os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+
+    app_path = os.path.join(REPO_ROOT, "aihive_coach", "app.py")
     env = os.environ.copy()
-    env['PYTHONPATH'] = SCREENSHOT_DIR  # Ensure root is in path
-    
+    env["PYTHONPATH"] = REPO_ROOT
+    env.pop("OPENAI_API_KEY", None)
+    env["APP_ENV"] = "test"
+    env["DATABASE_PATH"] = os.path.join("/tmp", "tutor_e2e_test.db")
+
     proc = subprocess.Popen(
-        [sys.executable, "-m", "streamlit", "run", app_path, 
-         f"--server.port={STREAMLIT_PORT}", 
-         "--server.headless=true",
-         "--server.fileWatcherType=none"],
+        [
+            sys.executable,
+            "-m",
+            "streamlit",
+            "run",
+            app_path,
+            f"--server.port={STREAMLIT_PORT}",
+            "--server.headless=true",
+            "--server.fileWatcherType=none",
+        ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=SCREENSHOT_DIR,  # Run from root directory
-        env=env
+        cwd=REPO_ROOT,
+        env=env,
     )
-    
-    # Wait for app to be ready
+
     print(f"Starting Streamlit on port {STREAMLIT_PORT}...")
     time.sleep(10)
-    
+
     yield proc
-    
-    # Cleanup
+
     proc.terminate()
-    proc.wait(timeout=5)
-    subprocess.run(f"pkill -f 'streamlit.*{STREAMLIT_PORT}'", shell=True)
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+    subprocess.run(f"pkill -f 'streamlit.*{STREAMLIT_PORT}' || true", shell=True)
+    db_path = env.get("DATABASE_PATH")
+    if db_path and os.path.exists(db_path):
+        os.unlink(db_path)
+
+
+def _open_sidebar(page):
+    control = page.locator('[data-testid="stSidebarCollapsedControl"]')
+    if control.count() > 0 and control.first.is_visible():
+        control.first.click()
+        time.sleep(1)
+        return
+    header_btn = page.locator('button[kind="header"]')
+    if header_btn.count() > 0:
+        header_btn.first.click()
+        time.sleep(1)
 
 
 def test_complete_tutor_flow_with_screenshots(streamlit_app):
     """
-    E2E test: Complete tutor flow with screenshot capture
-    - Desktop topic picker
-    - Mobile lesson with wrong answer (adaptive feedback)
-    - Mobile lesson with correct answer
-    - Mobile session summary
-    
-    Note: Sessions list screenshot is captured by the standalone script
-    (capture_real_screenshots.py) due to Streamlit rerun timing in headless mode
+    E2E: demo tutor flow with one incorrect + one correct answer.
+    Mobile (390px) summary must show non-zero correct/incorrect counts and practice questions.
     """
-    
+    os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        
-        # Screenshot 1: Desktop topic picker (1440x900)
+
+        # Desktop topic picker
         print("\n1. Capturing desktop topic picker...")
         page = browser.new_page(viewport={"width": 1440, "height": 900})
         page.goto(BASE_URL, timeout=30000)
         time.sleep(3)
-        
-        # Navigate to tutor via sidebar
-        page.get_by_text("Start Learning", exact=False).first.click()
+
+        open_tutor = page.locator("button:has-text('Open AIHive Tutor')")
+        if open_tutor.count() > 0 and open_tutor.first.is_visible():
+            open_tutor.first.click()
+        else:
+            page.locator("section[data-testid='stSidebar'] button:has-text('Start Learning')").first.click()
         time.sleep(2)
-        
-        # Verify we're on topic picker
+
         expect(page.get_by_text("What do you want to learn today?")).to_be_visible()
-        
-        # Save screenshot to /tmp, not repo
-        screenshot_path = "/tmp/tutor_desktop_topic_picker.png"
+        screenshot_path = os.path.join(SCREENSHOT_DIR, "tutor_desktop_topic_picker.png")
         page.screenshot(path=screenshot_path, full_page=True)
         print(f"   ✓ Saved: {screenshot_path}")
-        
         page.close()
-        
-        # Screenshot 2-4: Lesson flow (using desktop viewport for reliable navigation)
-        print("\n2. Starting lesson flow...")
-        page = browser.new_page(viewport={"width": 1440, "height": 900})
+
+        # Lesson + summary on mobile 390px
+        print("\n2. Starting mobile lesson flow (390px)...")
+        page = browser.new_page(viewport={"width": 390, "height": 844})
         page.goto(BASE_URL, timeout=30000)
         time.sleep(3)
-        
-        # Navigate to tutor
-        page.get_by_text("Start Learning", exact=False).first.click()
+
+        open_tutor = page.locator("button:has-text('Open AIHive Tutor')")
+        if open_tutor.count() > 0 and open_tutor.first.is_visible():
+            open_tutor.first.click()
+        else:
+            _open_sidebar(page)
+            page.locator("section[data-testid='stSidebar'] button:has-text('Start Learning')").first.click(
+                force=True
+            )
         time.sleep(2)
-        
-        # Select Photosynthesis topic
+
         page.get_by_text("🌱 Photosynthesis").click()
         time.sleep(1)
-        
-        # Click Start Learning button (Beginner is default)
         page.get_by_role("button", name="🚀 Start Learning").click()
         time.sleep(5)
-        
-        # Wait for first lesson message to appear
-        expect(page.locator(".stChatMessage")).to_have_count(1, timeout=10000)
-        
-        # Answer 1: Give a wrong/incomplete answer to trigger feedback
-        print("\n3. Answering first question (wrong answer)...")
+
+        expect(page.locator(".stChatMessage").first).to_be_visible(timeout=10000)
+
+        print("\n3. Wrong answer...")
         chat_input = page.get_by_placeholder("Type your answer here...")
         expect(chat_input).to_be_visible(timeout=5000)
-        
         chat_input.fill("I don't know")
         chat_input.press("Enter")
         time.sleep(5)
-        
-        # Wait for feedback message (at least 3 messages: initial + user + feedback, possibly more)
-        message_count = page.locator(".stChatMessage").count()
-        print(f"   Message count after wrong answer: {message_count}")
-        expect(page.locator(".stChatMessage").first).to_be_visible(timeout=10000)
-        
-        # Capture screenshot showing adaptive feedback (to /tmp, not repo)
-        screenshot_path = "/tmp/tutor_mobile_mid_lesson.png"
-        page.screenshot(path=screenshot_path, full_page=True)
-        print(f"   ✓ Saved: {screenshot_path}")
-        
-        # Answer 2: Give a good answer
-        print("\n4. Answering follow-up question (correct answer)...")
-        time.sleep(2)
-        
+
+        mid_path = os.path.join(SCREENSHOT_DIR, "tutor_mobile_mid_lesson.png")
+        page.screenshot(path=mid_path, full_page=False)
+        print(f"   ✓ Saved: {mid_path}")
+
+        print("\n4. Correct answer...")
         chat_input = page.get_by_placeholder("Type your answer here...")
-        chat_input.fill("Plants use sunlight, water, and carbon dioxide to make food through photosynthesis.")
+        chat_input.fill(
+            "Plants use sunlight, water, and carbon dioxide to make food through photosynthesis."
+        )
         chat_input.press("Enter")
         time.sleep(5)
-        
-        # Wait for more messages (should have more after good answer)
-        final_message_count = page.locator(".stChatMessage").count()
-        print(f"   Message count after correct answer: {final_message_count}")
-        assert final_message_count > message_count, "Should have more messages after correct answer"
-        
-        # End the lesson
+
         print("\n5. Ending lesson...")
         page.get_by_role("button", name="✅ End Lesson").click()
         time.sleep(5)
-        
-        # Verify summary is shown
+
         expect(page.get_by_text("Lesson Complete!")).to_be_visible(timeout=10000)
-        
-        # Capture summary screenshot (to /tmp, not repo)
-        screenshot_path = "/tmp/tutor_mobile_summary.png"
-        page.screenshot(path=screenshot_path, full_page=True)
-        print(f"   ✓ Saved: {screenshot_path}")
-        
-        # Verify the summary shows correct stats
-        summary_content = page.content()
-        assert "Questions Correct" in summary_content
-        assert "Questions Incorrect" in summary_content
-        # Both should show "1" based on our test flow
-        
+        main = page.locator('[data-testid="stMainBlockContainer"]')
+        expect(main.get_by_text("Questions Correct", exact=True)).to_be_visible()
+        expect(main.get_by_text("Questions Incorrect", exact=True)).to_be_visible()
+        expect(main.get_by_text("Practice Questions for Review")).to_be_visible()
+
+        body = main.inner_text()
+        assert "Questions Correct" in body
+        assert "Questions Incorrect" in body
+        assert "Practice Questions for Review" in body
+
+        # Metric values: after one wrong + one right, both should show 1
+        metrics = page.locator("[data-testid='stMetricValue']")
+        metric_values = [metrics.nth(i).inner_text().strip() for i in range(min(metrics.count(), 3))]
+        print(f"   Metric values: {metric_values}")
+        assert metric_values.count("1") >= 2, (
+            f"Expected correct=1 and incorrect=1, got metric values {metric_values}"
+        )
+
+        results = main.get_by_text("Your Results").first
+        results.scroll_into_view_if_needed()
+        time.sleep(0.5)
+        page.set_viewport_size({"width": 390, "height": 1000})
+        results.scroll_into_view_if_needed()
+        time.sleep(0.5)
+
+        summary_path = os.path.join(SCREENSHOT_DIR, "tutor_mobile_summary.png")
+        page.screenshot(path=summary_path, full_page=False)
+        print(f"   ✓ Saved: {summary_path}")
+
         page.close()
         browser.close()
-    
-    print("\n✅ E2E test completed successfully!")
-    print("   3 core screenshots captured: desktop topic picker, mobile mid-lesson, mobile summary")
-    print("   (Sessions list screenshot captured separately by capture_real_screenshots.py)")
 
-
-if __name__ == "__main__":
-    # Can be run directly for screenshot capture
-    with sync_playwright() as p:
-        # Start streamlit manually for direct run
-        print("Note: When running directly, start streamlit manually first:")
-        print(f"  streamlit run aihive_coach/app.py --server.port={STREAMLIT_PORT}")
-        print("\nThen run this script.")
+    print("\n✅ Tutor E2E completed (demo mode, no API key)")
