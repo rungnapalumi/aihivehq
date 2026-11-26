@@ -26,6 +26,10 @@ body {
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
+header[data-testid="stHeader"] {
+    display: none !important;
+    height: 0 !important;
+}
 .stDeployButton {display: none;}
 [data-testid="stToolbar"] {display: none;}
 [data-testid="stDecoration"] {display: none;}
@@ -233,24 +237,40 @@ div[data-testid="stVerticalBlock"] > div:has(> div.element-container) {
     gap: 0.5rem !important;
 }
 
-/* Mobile responsive */
+/* Mobile responsive — keep primary CTAs above the fold on phone viewports */
 @media (max-width: 768px) {
     h1 {
-        font-size: 2rem;
+        font-size: 1.6rem !important;
+        margin-bottom: 0.35rem !important;
+        line-height: 1.2 !important;
     }
     
     h2 {
-        font-size: 1.5rem;
+        font-size: 1.25rem !important;
     }
     
     .card {
-        padding: 1.5rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
     }
     
     .block-container {
-        padding-top: 1rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    /* Streamlit subheaders used on Coach landing */
+    [data-testid="stHeadingWithActionElements"] h2,
+    .stSubheader,
+    [data-testid="stMarkdownContainer"] h2 {
+        margin-top: 0.25rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .stButton > button {
+        padding: 0.65rem 1rem;
     }
 }
 
