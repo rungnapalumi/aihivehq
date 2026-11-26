@@ -82,6 +82,10 @@ with st.sidebar:
     if st.button("📋 My Action Plans", use_container_width=True, key="nav_plans"):
         st.session_state.navigation = "My Action Plans"
         st.rerun()
+
+    if st.button("📅 Book a session / นัดหมาย", use_container_width=True, key="nav_booking"):
+        st.session_state.navigation = "Book a session"
+        st.rerun()
     
     st.markdown("---")
     st.markdown("### Tutor")
@@ -191,6 +195,9 @@ def show_coach_landing_page():
         if st.button("🚀 Start Your First Session", use_container_width=True, type="primary", key="start_first_top"):
             st.session_state.navigation = "Start Coaching"
             st.rerun()
+        if st.button("📅 Book a session / นัดหมาย", use_container_width=True, key="book_session_top"):
+            st.session_state.navigation = "Book a session"
+            st.rerun()
     
     st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
     
@@ -296,8 +303,8 @@ def show_coach_landing_page():
                 st.session_state.navigation = "My Action Plans"
                 st.rerun()
         with nav_cols[2]:
-            if st.button("🔒 Privacy", key="mobile_nav_privacy_landing", use_container_width=True):
-                st.session_state.navigation = "Privacy"
+            if st.button("📅 Book", key="mobile_nav_book_landing", use_container_width=True):
+                st.session_state.navigation = "Book a session"
                 st.rerun()
     
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
@@ -378,6 +385,9 @@ elif page == "Start Coaching":
     show_coaching_page()
 elif page == "My Action Plans":
     show_action_plans_page()
+elif page == "Book a session":
+    from booking_page import show_booking_page
+    show_booking_page()
 elif page == "Start Learning":
     # Tutor lesson page
     try:

@@ -2,14 +2,13 @@
   "site_title": "AIHiveHQ",
   "site_tagline": "Think Clearly. Act Confidently. Grow Daily.",
   "product_name": "AIHive Coach",
-  
   "nav": {
     "home": "Home",
     "coach_landing": "AIHive Coach",
     "coaching": "Start Coaching",
-    "action_plans": "My Action Plans"
+    "action_plans": "My Action Plans",
+    "booking": "Book a session"
   },
-  
   "home": {
     "hero_title": "Welcome to AIHiveHQ",
     "hero_subtitle": "AI Software Company. Revenue First. Scale the AI Army Later.",
@@ -18,7 +17,6 @@
     "product_description": "Your AI personal development coach. Clarify goals, overcome obstacles, make confident decisions, and commit to meaningful action.",
     "cta_button": "Try AIHive Coach"
   },
-  
   "coach_landing": {
     "hero_title": "AIHive Coach",
     "hero_subtitle": "Think Clearly. Act Confidently. Grow Daily.",
@@ -38,7 +36,6 @@
     "category_decisions": "Decision Making",
     "cta_button": "Start Your First Session"
   },
-  
   "coaching": {
     "title": "Coaching Workspace",
     "category_prompt": "What would you like to work on today?",
@@ -48,7 +45,6 @@
     "new_session_button": "Start New Session",
     "mode_indicator": "Mode"
   },
-  
   "action_plans": {
     "title": "My Action Plans",
     "no_plans": "You haven't created any action plans yet. Start a coaching session to create your first plan!",
@@ -63,5 +59,16 @@
     "mark_complete_button": "Mark Complete",
     "created_label": "Created",
     "last_reviewed_label": "Last Reviewed"
+  },
+  "booking": {
+    "title": "Book a session / นัดหมาย",
+    "caption": "30 minutes, 19:00–21:00 Asia/Bangkok",
+    "name_label": "Name",
+    "email_label": "Email",
+    "topic_label": "Topic (optional)",
+    "date_label": "Date",
+    "slots_label": "Available times (ICT)",
+    "submit": "Book session",
+    "sync_pending": "Calendar sync is pending"
   }
 }
