@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Demo — AIHive Leadership Expedition | AIHiveHQ</title>
+<meta name="description" content="Try the AIHive Leadership Expedition simulation: four decisions under pressure and an illustrative Leadership Intelligence Report.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/leadership/assets/leadership.css">
+</head>
+<body data-page="demo">
+<a class="sr-only" href="#main">Skip to content</a>
+<nav class="l-nav" aria-label="Main">
+  <div class="l-nav-inner">
+    <a class="l-logo" href="/">AIHiveHQ<small>Leadership</small></a>
+    <div class="l-links">
+      <a href="/#agents">AI Agents</a>
+      <a href="/leadership/">Leadership</a>
+      <a href="/leadership/expedition/">Expedition</a>
+      <a href="/leadership/demo/" aria-current="page">Live Demo</a>
+      <a class="btn btn-primary btn-sm" href="/leadership/expedition/#request">Request a Corporate Program</a>
+    </div>
+    <button class="l-burger" aria-label="Open menu" aria-expanded="false" aria-controls="l-mobile"><span></span><span></span><span></span></button>
+  </div>
+  <div class="l-mobile" id="l-mobile">
+    <a href="/#agents">AI Agents</a>
+    <a href="/leadership/">Leadership</a>
+    <a href="/leadership/expedition/">Leadership Expedition</a>
+    <a href="/leadership/demo/">Live Demo</a>
+    <a href="/leadership/expedition/#request">Request a Corporate Program</a>
+  </div>
+</nav>
+<main id="main">
+<section class="section page-hero" style="padding:3.5rem 0 1.5rem">
+  <div class="container">
+    <span class="eyebrow">Interactive demo · Simulated training environment</span>
+    <h1 style="color:#fff;font-size:clamp(2rem,4.5vw,3rem);line-height:1.1;margin:1rem 0 .8rem">Leadership Expedition — <span class="grad">Interactive Demo</span></h1>
+    <p style="color:var(--slate-300);max-width:70ch">Lead a fictional team through an illustrative orienteering course: limited time, incomplete information and changing conditions. Four decisions, about 3–5 minutes. Everything runs in your browser; nothing you type is sent anywhere.</p>
+  </div>
+</section>
+
+<section id="sim-app" style="padding-bottom:3rem" aria-label="Leadership simulation">
+  <div class="container sim-shell">
+    <div class="panel">
+      <div class="map-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Simulated training environment — not a real navigation map</div>
+      <div class="map-wrap" id="sim-map" data-testid="sim-map"></div>
+      <div class="stats" id="sim-stats" data-testid="sim-stats"></div>
+      <ol class="log" id="sim-log" aria-label="Decisions made"></ol>
+      <div class="actions" style="margin-top:1rem">
+        <span style="font-size:.8rem;color:var(--slate-500)">Team and terrain are fictional.</span>
+        <button class="btn btn-secondary btn-sm" type="button" id="sim-restart" data-testid="sim-restart">↺ Restart simulation</button>
+      </div>
+    </div>
+    <div class="panel sim-q" id="sim-stage" data-testid="sim-stage" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="report" class="report" hidden aria-label="Leadership Intelligence Report">
+  <div class="container" id="report-body" data-testid="report"></div>
+</section>
+</main>
+<footer class="l-footer">
+  <div class="container">
+    <div class="row">
+      <div>&copy; 2026 AIHiveHQ · AIHive Leadership · Founded by Rungnapa Mukdasanit</div>
+      <div><a href="/">AIHiveHQ home</a> · <a href="/leadership/">Leadership</a> · <a href="/leadership/demo/">Live Demo</a></div>
+    </div>
+    <p class="credits">AIHive Leadership Expedition is a pilot program in development. The demo is a simulated training environment; its scores are illustrative simulation indicators, not validated assessments.</p>
+  </div>
+</footer>
+<script src="/leadership/assets/leadership.js" defer></script>
+<script src="/leadership/assets/sim.js" defer></script>
+<script src="/leadership/assets/demo.js" defer></script>
+</body>
+</html>
