@@ -75,14 +75,14 @@
       s.push('<g transform="translate(' + c.x + ' ' + c.y + ')">' +
         '<circle r="17" fill="' + (got ? 'url(#g1)' : 'rgba(10,14,26,.8)') + '" stroke="#c084fc" stroke-width="2.5"/>' +
         '<text y="4.5" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">' + (got ? '✓' : id.slice(2)) + '</text>' +
-        '<text y="34" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">' + id + ' · ' + c.points + ' pts</text></g>');
+        '<text class="ml" y="36" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">' + id + ' · ' + c.points + ' pts</text></g>');
     });
     var st0 = Sim.MAP.start, fin = Sim.MAP.finish;
-    s.push('<g transform="translate(' + st0.x + ' ' + st0.y + ')"><path d="M0-18L16 10H-16Z" fill="none" stroke="#f472b6" stroke-width="3"/><text y="30" text-anchor="middle" fill="#fbcfe8" font-size="11" font-weight="700">START</text></g>');
-    s.push('<g transform="translate(' + fin.x + ' ' + fin.y + ')"><circle r="16" fill="' + (state.finished ? 'rgba(244,114,182,.35)' : 'none') + '" stroke="#f472b6" stroke-width="3"/><circle r="9" fill="none" stroke="#f472b6" stroke-width="3"/><text y="34" text-anchor="middle" fill="#fbcfe8" font-size="11" font-weight="700">FINISH</text></g>');
+    s.push('<g transform="translate(' + st0.x + ' ' + st0.y + ')"><path d="M0-18L16 10H-16Z" fill="none" stroke="#f472b6" stroke-width="3"/><text class="ml" y="32" text-anchor="middle" fill="#fbcfe8" font-size="11" font-weight="700">START</text></g>');
+    s.push('<g transform="translate(' + fin.x + ' ' + fin.y + ')"><circle r="16" fill="' + (state.finished ? 'rgba(244,114,182,.35)' : 'none') + '" stroke="#f472b6" stroke-width="3"/><circle r="9" fill="none" stroke="#f472b6" stroke-width="3"/><text class="ml" y="36" text-anchor="middle" fill="#fbcfe8" font-size="11" font-weight="700">FINISH</text></g>');
     // north arrow and banner
     s.push('<g transform="translate(760 470)"><path d="M0-22L7 4 0-2-7 4Z" fill="#cbd5e1"/><text y="18" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="700">N</text></g>');
-    s.push('<rect x="10" y="10" width="420" height="24" rx="6" fill="rgba(10,14,26,.8)" stroke="rgba(251,191,36,.5)"/><text x="20" y="26" fill="#fbbf24" font-size="11" font-weight="700" letter-spacing=".5">SIMULATED TRAINING ENVIRONMENT · NOT A REAL MAP</text>');
+     s.push('<g class="map-banner"><rect x="10" y="10" width="420" height="24" rx="6" fill="rgba(10,14,26,.8)" stroke="rgba(251,191,36,.5)"/><text x="20" y="26" fill="#fbbf24" font-size="11" font-weight="700" letter-spacing=".5">SIMULATED TRAINING ENVIRONMENT · NOT A REAL MAP</text></g>');
     s.push('</svg>');
     mapEl.innerHTML = s.join('');
   }
@@ -183,7 +183,7 @@
   function radar(dims) {
     var cx = 170, cy = 165, R = 115, n = dims.length, h = [];
     function p(i, v) { var a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + Math.cos(a) * R * v / 100, cy + Math.sin(a) * R * v / 100]; }
-    h.push('<svg class="radar" viewBox="-95 -5 530 340" role="img" aria-label="Radar chart of illustrative simulation indicators">');
+    h.push('<svg class="radar" viewBox="-110 -10 560 350" role="img" aria-label="Radar chart of illustrative simulation indicators">');
     [25, 50, 75, 100].forEach(function (v) {
       h.push('<polygon points="' + dims.map(function (_, i) { return p(i, v).join(','); }).join(' ') + '" fill="none" stroke="rgba(148,163,184,' + (v === 50 ? .45 : .18) + ')"' + (v === 50 ? ' stroke-dasharray="4 4"' : '') + '/>');
     });
@@ -192,7 +192,7 @@
     dims.forEach(function (d, i) {
       var q = p(i, d.score); h.push('<circle cx="' + q[0] + '" cy="' + q[1] + '" r="3.5" fill="#fff"/>');
       var l = p(i, 128), anchor = Math.abs(l[0] - cx) < 10 ? 'middle' : l[0] > cx ? 'start' : 'end';
-      h.push('<text x="' + l[0] + '" y="' + (l[1] + 4) + '" text-anchor="' + anchor + '">' + esc(d.label) + ' (' + d.score + ')</text>');
+      h.push('<text x="' + l[0] + '" y="' + (l[1] - 2) + '" text-anchor="' + anchor + '">' + esc(d.label) + '<tspan x="' + l[0] + '" dy="1.15em" font-weight="700">' + d.score + '</tspan></text>');
     });
     h.push('</svg>');
     return h.join('');
