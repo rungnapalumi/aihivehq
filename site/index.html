@@ -524,10 +524,16 @@
             flex-shrink: 0;
         }
         
-        .badge-demo {
+        .badge-available {
             background: rgba(16, 185, 129, 0.15);
             color: #10b981;
             border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .badge-demo {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         
         .badge-soon {
@@ -540,6 +546,13 @@
             background: rgba(100, 116, 139, 0.15);
             color: var(--slate-400);
             border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+        
+        .agent-note {
+            font-size: 0.8125rem;
+            color: var(--slate-400);
+            line-height: 1.5;
+            margin: 0 0 var(--space-4) 0;
         }
         
         .agent-action {
@@ -1248,7 +1261,7 @@
                         <p class="agent-preview-message">Let's explore what's on your mind today. What would you like to work on?</p>
                         <div class="agent-preview-status">
                             <span class="agent-preview-pulse"></span>
-                            <span>Demo</span>
+                            <span>Available</span>
                         </div>
                     </div>
                 </div>
@@ -1276,11 +1289,11 @@
                             </div>
                             <h3 class="agent-title">AIHive Coach</h3>
                         </div>
-                        <span class="badge badge-demo">Demo</span>
+                        <span class="badge badge-available">Available</span>
                     </div>
                     <p class="agent-description">Personal development coach that helps you think clearly, challenge assumptions, and turn insights into actionable plans.</p>
                     <div class="agent-action">
-                        <a href="https://aihive-coach.onrender.com" class="btn btn-primary btn-agent">Try Demo</a>
+                        <a href="https://aihive-coach.onrender.com" class="btn btn-primary btn-agent">Try it</a>
                     </div>
                 </div>
                 
@@ -1296,11 +1309,11 @@
                             </div>
                             <h3 class="agent-title">AIHive Tutor</h3>
                         </div>
-                        <span class="badge badge-soon">Coming Soon</span>
+                        <span class="badge badge-available">Available</span>
                     </div>
                     <p class="agent-description">Personalized learning companion that adapts to your pace, explains complex concepts, and reinforces understanding through practice.</p>
                     <div class="agent-action">
-                        <button class="btn btn-secondary btn-agent" disabled>Coming Soon</button>
+                        <a href="https://aihive-coach.onrender.com" class="btn btn-primary btn-agent">Try it</a>
                     </div>
                 </div>
                 
@@ -1316,11 +1329,11 @@
                             </div>
                             <h3 class="agent-title">Finance Agent</h3>
                         </div>
-                        <span class="badge badge-soon">Coming Soon</span>
+                        <span class="badge badge-available">Available</span>
                     </div>
                     <p class="agent-description">Organizes budgets and spending insights so you can plan with clarity.</p>
                     <div class="agent-action">
-                        <button class="btn btn-secondary btn-agent" disabled>Coming Soon</button>
+                        <a href="https://aihive-coach.onrender.com" class="btn btn-primary btn-agent">Try it</a>
                     </div>
                 </div>
                 
@@ -1336,11 +1349,11 @@
                             </div>
                             <h3 class="agent-title">Developer Agent</h3>
                         </div>
-                        <span class="badge badge-soon">Coming Soon</span>
+                        <span class="badge badge-available">Available</span>
                     </div>
                     <p class="agent-description">Code assistant that provides architecture guidance, reviews code quality, and helps debug complex technical challenges.</p>
                     <div class="agent-action">
-                        <button class="btn btn-secondary btn-agent" disabled>Coming Soon</button>
+                        <a href="https://aihive-coach.onrender.com" class="btn btn-primary btn-agent">Try it</a>
                     </div>
                 </div>
                 
@@ -1356,11 +1369,12 @@
                             </div>
                             <h3 class="agent-title">Marketing Agent</h3>
                         </div>
-                        <span class="badge badge-soon">Coming Soon</span>
+                        <span class="badge badge-demo">Demo</span>
                     </div>
                     <p class="agent-description">Marketing strategist that analyzes campaigns, optimizes content, and provides data-driven insights for growth.</p>
+                    <p class="agent-note">Responses are scripted examples.</p>
                     <div class="agent-action">
-                        <button class="btn btn-secondary btn-agent" disabled>Coming Soon</button>
+                        <a href="https://aihive-coach.onrender.com" class="btn btn-secondary btn-agent">Try Demo</a>
                     </div>
                 </div>
                 
