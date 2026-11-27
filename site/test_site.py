@@ -6,6 +6,12 @@ from playwright.sync_api import sync_playwright, expect
 from pathlib import Path
 import json
 
+import pytest
+
+# Browser-based; excluded from the fast `-m "not e2e"` unit suite.
+pytestmark = pytest.mark.e2e
+
+
 def test_site():
     """Run comprehensive site tests"""
     
@@ -173,15 +179,56 @@ def test_site():
         page.goto(file_url)
         page.wait_for_load_state("networkidle")
         
-        # Check decorative card says "Demo"
-        demo_text = page.text_content(".agent-preview-status")
-        if demo_text and "Demo" in demo_text:
-            print("   ✅ Hero decorative card shows 'Demo'")
-            results["passed"].append("Decorative card shows Demo")
+        # Check decorative card says "Available" (model-backed Coach)
+        preview_text = page.text_content(".agent-preview-status")
+        if preview_text and "Available" in preview_text:
+            print("   ✅ Hero decorative card shows 'Available'")
+            results["passed"].append("Decorative card shows Available")
         else:
-            print(f"   ❌ Hero decorative card text: '{demo_text}'")
+            print(f"   ❌ Hero decorative card text: '{preview_text}'")
             results["failed"].append("Decorative card wrong text")
-        
+
+        # Honest marketplace badges (aligned with workforce/registry.py)
+        expected_badges = {
+            "AIHive Coach": "Available",
+            "AIHive Tutor": "Available",
+            "Finance Agent": "Available",
+            "Developer Agent": "Available",
+            "Marketing Agent": "Demo",
+            "AI Workforce": "Future Vision",
+        }
+        cards = page.query_selector_all(".agent-card")
+        for card in cards:
+            title = (card.query_selector(".agent-title") or card).inner_text().split("\n")[0].strip()
+            badge_el = card.query_selector(".badge")
+            # CSS uses text-transform: uppercase; compare case-insensitively.
+            badge = badge_el.inner_text().strip() if badge_el else ""
+            expected = expected_badges.get(title)
+            if expected is None:
+                continue
+            if badge.casefold() == expected.casefold():
+                print(f"   ✅ {title} badge: {badge}")
+                results["passed"].append(f"Badge {title}: {expected}")
+            else:
+                print(f"   ❌ {title} badge: '{badge}' (expected '{expected}')")
+                results["failed"].append(f"Badge {title}: {badge}")
+
+        marketing_note = page.locator(".agent-card", has_text="Marketing Agent").locator(".agent-note")
+        if marketing_note.count() and "scripted" in marketing_note.first.inner_text().lower():
+            print("   ✅ Marketing Agent notes scripted examples")
+            results["passed"].append("Marketing scripted note")
+        else:
+            print("   ❌ Marketing Agent missing scripted-examples note")
+            results["failed"].append("Marketing scripted note missing")
+
+        try_it_links = page.locator("a.btn-agent", has_text="Try it")
+        if try_it_links.count() == 4:
+            print("   ✅ Four 'Try it' links for model-backed agents")
+            results["passed"].append("Try it links for Available agents")
+        else:
+            print(f"   ❌ Expected 4 'Try it' links, found {try_it_links.count()}")
+            results["failed"].append(f"Try it links: {try_it_links.count()}")
+
         # Check agent grid columns
         grid_columns = page.evaluate("""
             () => {
@@ -265,10 +312,11 @@ def test_site():
     
     if not results['failed']:
         print("✅ ALL TESTS PASSED - Site is deployment-ready!")
-        return 0
     else:
         print("❌ SOME TESTS FAILED - Review issues above")
-        return 1
+
+    assert not results["failed"], f"Site checks failed: {results['failed']}"
+
 
 if __name__ == "__main__":
-    exit(test_site())
+    test_site()
