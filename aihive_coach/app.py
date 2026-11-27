@@ -97,6 +97,10 @@ with st.sidebar:
     if st.button("📖 My Study Sessions", use_container_width=True, key="nav_sessions"):
         st.session_state.navigation = "My Study Sessions"
         st.rerun()
+
+    if st.button("📅 Book a session / นัดหมาย", use_container_width=True, key="nav_tutor_booking"):
+        st.session_state.navigation = "Book a tutor session"
+        st.rerun()
     
     st.markdown("---")
     st.markdown("### Marketing")
@@ -387,7 +391,10 @@ elif page == "My Action Plans":
     show_action_plans_page()
 elif page == "Book a session":
     from booking_page import show_booking_page
-    show_booking_page()
+    show_booking_page(service_type="coach")
+elif page == "Book a tutor session":
+    from booking_page import show_booking_page
+    show_booking_page(service_type="tutor")
 elif page == "Start Learning":
     # Tutor lesson page
     try:

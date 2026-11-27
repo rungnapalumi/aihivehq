@@ -1,4 +1,4 @@
-"""Tests for Coach session booking: slots, double-booking, CalDAV mocks, privacy."""
+"""Tests for Coach and Tutor session booking: slots, double-booking, CalDAV mocks, privacy."""
 from __future__ import annotations
 
 import logging
@@ -13,6 +13,7 @@ from booking import (
     BOOKING_HORIZON_DAYS,
     BookingService,
     TrialAlreadyUsedError,
+    _event_summary,
     booking_date_allowed,
     generate_slots_for_date,
     is_canonical_slot,
@@ -299,6 +300,8 @@ class TestCalDavMocked:
         assert len(cal.created) == 1
         assert cal.created[0]["customer_email"] == "ada@example.com"
         assert cal.created[0]["topic"] == "Goals"
+        assert cal.created[0]["summary"] == "AIHive Coach trial (15 min)"
+        assert result.booking.service_type == "coach"
         saved = test_db.get_booking(result.booking.id)
         assert saved.calendar_synced is True
 
@@ -670,3 +673,175 @@ class TestStripeKeySafety:
         assert get_session_price_thb() == DEFAULT_PLACEHOLDER_PRICE_THB
         assert "placeholder" in price_label_en().lower()
         assert "not yet decided" in price_label_en().lower()
+
+
+class TestCrossServiceBooking:
+    """Coach and Tutor share one slot pool and calendar; trials are per service."""
+
+    def test_event_summary_includes_service_type(self):
+        assert _event_summary("trial", "coach") == "AIHive Coach trial (15 min)"
+        assert _event_summary("paid", "coach") == "AIHive Coach session (30 min)"
+        assert _event_summary("trial", "tutor") == "AIHive Tutor trial (15 min)"
+        assert _event_summary("paid", "tutor") == "AIHive Tutor session (30 min)"
+
+    def test_same_email_can_use_trial_once_per_service(self, test_db, future_slot):
+        service = BookingService(test_db)
+        now = datetime(future_slot.year, future_slot.month, future_slot.day, 8, 0, tzinfo=BANGKOK)
+        coach = service.book_trial(
+            name="Ada",
+            email="ada@example.com",
+            topic=None,
+            slot_start=future_slot,
+            now=now,
+            service_type="coach",
+        )
+        assert coach.booking.service_type == "coach"
+        later = future_slot.replace(hour=20, minute=0)
+        tutor = service.book_trial(
+            name="Ada",
+            email="ADA@example.com",
+            topic=None,
+            slot_start=later,
+            now=now,
+            service_type="tutor",
+        )
+        assert tutor.booking.service_type == "tutor"
+        with pytest.raises(TrialAlreadyUsedError, match="Tutor"):
+            service.book_trial(
+                name="Ada",
+                email="ada@example.com",
+                topic=None,
+                slot_start=future_slot.replace(hour=20, minute=30),
+                now=now,
+                service_type="tutor",
+            )
+        with pytest.raises(TrialAlreadyUsedError, match="Coach"):
+            service.book_trial(
+                name="Ada",
+                email="ada@example.com",
+                topic=None,
+                slot_start=future_slot.replace(hour=20, minute=30),
+                now=now,
+                service_type="coach",
+            )
+
+    def test_tutor_booking_makes_same_slot_busy_for_coach(self, test_db, future_slot):
+        service = BookingService(test_db)
+        now = datetime(future_slot.year, future_slot.month, future_slot.day, 8, 0, tzinfo=BANGKOK)
+        service.book_trial(
+            name="Ada",
+            email="ada@example.com",
+            topic=None,
+            slot_start=future_slot,
+            now=now,
+            service_type="tutor",
+        )
+        with pytest.raises(SlotUnavailableError):
+            service.book_trial(
+                name="Bea",
+                email="bea@example.com",
+                topic=None,
+                slot_start=future_slot,
+                now=now,
+                service_type="coach",
+            )
+        coach_slots, _ = service.available_slots(
+            future_slot.date(), now=now, kind="trial", include_calendar=False
+        )
+        tutor_slots, _ = service.available_slots(
+            future_slot.date(), now=now, kind="trial", include_calendar=False
+        )
+        assert future_slot not in coach_slots
+        assert future_slot not in tutor_slots
+
+    def test_tutor_trial_hides_overlapping_paid_coach_slot(self, test_db, future_slot):
+        trial_start = future_slot.replace(minute=15)
+        test_db.create_booking(
+            customer_name="Ada",
+            customer_email="ada@example.com",
+            topic="secret-tutor",
+            slot_start=trial_start,
+            slot_end=trial_start + timedelta(minutes=15),
+            session_kind="trial",
+            status="confirmed",
+            service_type="tutor",
+        )
+        service = BookingService(test_db)
+        now = datetime(future_slot.year, future_slot.month, future_slot.day, 8, 0, tzinfo=BANGKOK)
+        paid, _ = service.available_slots(future_slot.date(), now=now, kind="paid", include_calendar=False)
+        assert future_slot not in paid  # 19:00–19:30 overlaps 19:15–19:30 tutor trial
+        assert future_slot.replace(hour=19, minute=30) in paid
+
+    def test_coach_paid_hold_blocks_tutor_trial(self, test_db, future_slot):
+        stripe = FakeStripe(paid=True)
+        service = BookingService(test_db, stripe_client=stripe)
+        now = datetime(future_slot.year, future_slot.month, future_slot.day, 8, 0, tzinfo=BANGKOK)
+        pending = service.start_paid_checkout(
+            name="Ada",
+            email="ada@example.com",
+            topic=None,
+            slot_start=future_slot,
+            now=now,
+            success_url="http://localhost/success?session_id={CHECKOUT_SESSION_ID}&booking_id=x",
+            cancel_url="http://localhost/cancel",
+            service_type="coach",
+        )
+        assert pending.booking.service_type == "coach"
+        with pytest.raises(SlotUnavailableError):
+            service.book_trial(
+                name="Bea",
+                email="bea@example.com",
+                topic=None,
+                slot_start=future_slot,
+                now=now,
+                service_type="tutor",
+            )
+
+    def test_tutor_calendar_event_title_includes_tutor(self, test_db, future_slot):
+        cal = FakeCalendar()
+        service = BookingService(test_db, calendar_client=cal)
+        result = service.book_trial(
+            name="Ada",
+            email="ada@example.com",
+            topic="Algebra",
+            slot_start=future_slot,
+            service_type="tutor",
+        )
+        assert result.calendar_synced is True
+        assert cal.created[0]["summary"] == "AIHive Tutor trial (15 min)"
+        assert result.booking.service_type == "tutor"
+
+    def test_sqlite_allows_same_email_trial_on_other_service(self, test_db, future_slot):
+        test_db.create_booking(
+            customer_name="Ada",
+            customer_email="ada@example.com",
+            topic=None,
+            slot_start=future_slot,
+            slot_end=future_slot + timedelta(minutes=15),
+            session_kind="trial",
+            status="confirmed",
+            service_type="coach",
+        )
+        later = future_slot.replace(hour=20, minute=0)
+        booking = test_db.create_booking(
+            customer_name="Ada",
+            customer_email="ada@example.com",
+            topic=None,
+            slot_start=later,
+            slot_end=later + timedelta(minutes=15),
+            session_kind="trial",
+            status="confirmed",
+            service_type="tutor",
+        )
+        assert booking.service_type == "tutor"
+        with pytest.raises(TrialAlreadyUsedError):
+            test_db.create_booking(
+                customer_name="Ada",
+                customer_email="ada@example.com",
+                topic=None,
+                slot_start=future_slot.replace(hour=20, minute=30),
+                slot_end=future_slot.replace(hour=20, minute=30) + timedelta(minutes=15),
+                session_kind="trial",
+                status="confirmed",
+                service_type="coach",
+            )

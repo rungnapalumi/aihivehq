@@ -1,4 +1,4 @@
-"""E2E: Book a session / นัดหมาย page renders."""
+"""E2E: Book a session / นัดหมาย pages (Coach and Tutor) render."""
 from __future__ import annotations
 
 import os
@@ -70,13 +70,19 @@ def _assert_password_not_on_page(page):
             pytest.fail("Calendar password appeared on the booking page")
 
 
+def _open_booking(page, service="coach"):
+    """Open the Coach (first) or Tutor (second) sidebar booking entry."""
+    index = 0 if service == "coach" else 1
+    page.locator("section[data-testid='stSidebar'] button:has-text('นัดหมาย')").nth(index).click()
+    time.sleep(3)
+
+
 def test_booking_page_renders(streamlit_app, browser_context):
     page = browser_context.new_page()
     page.goto(APP_URL)
     time.sleep(3)
     expect(page.locator("section[data-testid='stSidebar']")).to_be_visible(timeout=10000)
-    page.locator("section[data-testid='stSidebar'] button:has-text('นัดหมาย')").click()
-    time.sleep(3)
+    _open_booking(page, "coach")
     expect(page.locator("text=Book a session").first).to_be_visible()
     expect(page.locator("text=นัดหมาย").first).to_be_visible()
     expect(page.locator("text=Name / ชื่อ").first).to_be_visible()
@@ -96,8 +102,7 @@ def test_booking_page_shows_free_slots_not_other_customers(streamlit_app, browse
     page = browser_context.new_page()
     page.goto(APP_URL)
     time.sleep(3)
-    page.locator("section[data-testid='stSidebar'] button:has-text('นัดหมาย')").click()
-    time.sleep(3)
+    _open_booking(page, "coach")
     content = page.content()
     # A fresh test DB has no other customers; the page must not invent any.
     assert "ada-private@example.com" not in content
@@ -115,8 +120,44 @@ def test_paid_session_shows_payments_not_enabled(streamlit_app, browser_context)
     page = browser_context.new_page()
     page.goto(APP_URL)
     time.sleep(3)
-    page.locator("section[data-testid='stSidebar'] button:has-text('นัดหมาย')").click()
+    _open_booking(page, "coach")
+    page.locator('[data-testid="stRadioOption"]:has-text("นัด 30 นาที")').click()
     time.sleep(3)
+    content = page.content()
+    assert "Payments are not yet enabled" in content or "ยังไม่เปิดรับชำระเงิน" in content
+    assert "placeholder" in content.lower() or "ราคาตัวอย่าง" in content
+    assert "Payment verified" not in content
+    assert "ชำระแล้ว" not in content
+    pay = page.locator("button:has-text('ชำระเงิน')")
+    if pay.count():
+        assert pay.first.is_disabled()
+    _assert_password_not_on_page(page)
+
+
+def test_tutor_booking_page_renders(streamlit_app, browser_context):
+    page = browser_context.new_page()
+    page.goto(APP_URL)
+    time.sleep(3)
+    expect(page.locator("section[data-testid='stSidebar']")).to_be_visible(timeout=10000)
+    _open_booking(page, "tutor")
+    expect(page.locator("text=Book a session").first).to_be_visible()
+    expect(page.locator("text=AIHive Tutor").first).to_be_visible()
+    expect(page.locator("text=Name / ชื่อ").first).to_be_visible()
+    expect(page.locator("text=ทดลองใช้ฟรี").first).to_be_visible()
+    expect(page.locator("button:has-text('จองทดลองใช้')").first).to_be_visible()
+    content = page.content()
+    assert "calendar sync is pending" in content.lower() or "การซิงค์ปฏิทินยังค้างอยู่" in content
+    assert "successfully synced to the calendar" not in content.lower()
+    # Shared pool copy should be visible on the Tutor page.
+    assert "share the same calendar" in content.lower() or "ใช้ปฏิทินและช่วงเวลาเดียวกัน" in content
+    _assert_password_not_on_page(page)
+
+
+def test_tutor_paid_session_shows_payments_not_enabled(streamlit_app, browser_context):
+    page = browser_context.new_page()
+    page.goto(APP_URL)
+    time.sleep(3)
+    _open_booking(page, "tutor")
     page.locator('[data-testid="stRadioOption"]:has-text("นัด 30 นาที")').click()
     time.sleep(3)
     content = page.content()

@@ -1,4 +1,9 @@
-"""Coach session booking: trial (15 min) and paid (30 min) slots."""
+"""Coach and Tutor session booking: trial (15 min) and paid (30 min) slots.
+
+Both services share one calendar and one slot pool in the 19:00–21:00
+Asia/Bangkok window. A time booked as Coach is busy for Tutor and vice versa.
+A free 15-minute trial is allowed once per email per service.
+"""
 from __future__ import annotations
 
 import re
@@ -47,6 +52,9 @@ BOOKING_HORIZON_DAYS = 30
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 WINDOW_START_HOUR, WINDOW_START_MINUTE = 19, 0
 WINDOW_END_HOUR, WINDOW_END_MINUTE = 21, 0
+SERVICE_TYPES = ("coach", "tutor")
+SERVICE_LABELS = {"coach": "Coach", "tutor": "Tutor"}
+SERVICE_LABELS_TH = {"coach": "โค้ช", "tutor": "ติวเตอร์"}
 
 
 class TrialAlreadyUsedError(Exception):
@@ -55,6 +63,30 @@ class TrialAlreadyUsedError(Exception):
 
 def normalize_email(email: str) -> str:
     return (email or "").strip().lower()
+
+
+def normalize_service_type(service_type: str) -> str:
+    value = (service_type or "coach").strip().lower()
+    if value not in SERVICE_TYPES:
+        raise ValueError("Unknown booking service / ไม่พบบริการที่เลือก")
+    return value
+
+
+def service_label(service_type: str, lang: str = "en") -> str:
+    key = normalize_service_type(service_type)
+    if lang == "th":
+        return SERVICE_LABELS_TH[key]
+    return SERVICE_LABELS[key]
+
+
+def trial_already_used_message(service_type: str = "coach") -> str:
+    en = service_label(service_type, "en")
+    th = service_label(service_type, "th")
+    return (
+        f"This email has already used the free 15-minute {en} trial. "
+        "Please book a paid 30-minute session. "
+        f"/ อีเมลนี้ใช้สิทธิ์ทดลอง 15 นาทีของ{th}ไปแล้ว กรุณาจองนัด 30 นาทีแบบชำระเงิน"
+    )
 
 
 def slot_key(slot_start: datetime) -> str:
@@ -123,10 +155,11 @@ def validate_booking_form(name: str, email: str, topic: Optional[str] = None) ->
     return errors
 
 
-def _event_summary(kind: str) -> str:
+def _event_summary(kind: str, service_type: str = "coach") -> str:
+    label = service_label(service_type, "en")
     if kind == "trial":
-        return "AIHive Coach trial (15 min)"
-    return "AIHive Coach session (30 min)"
+        return f"AIHive {label} trial (15 min)"
+    return f"AIHive {label} session (30 min)"
 
 
 @dataclass
@@ -253,7 +286,7 @@ class BookingService:
                 customer_name=booking.customer_name,
                 customer_email=booking.customer_email,
                 topic=booking.topic,
-                summary=_event_summary(booking.session_kind),
+                summary=_event_summary(booking.session_kind, booking.service_type),
             )
             self.db.update_booking_calendar_sync(booking.id, calendar_uid=str(uid), synced=True)
             booking.calendar_uid = str(uid)
@@ -289,21 +322,19 @@ class BookingService:
         topic: Optional[str],
         slot_start: datetime,
         now: Optional[datetime] = None,
+        service_type: str = "coach",
     ) -> BookingResult:
         errors = validate_booking_form(name, email, topic)
         if errors:
             raise ValueError(errors[0])
+        service_type = normalize_service_type(service_type)
         now = now or datetime.now(BANGKOK)
         if now.tzinfo is None:
             now = now.replace(tzinfo=BANGKOK)
         else:
             now = now.astimezone(BANGKOK)
-        if self.db.email_has_used_trial(email):
-            raise TrialAlreadyUsedError(
-                "This email has already used the free 15-minute trial. "
-                "Please book a paid 30-minute session. "
-                "/ อีเมลนี้ใช้สิทธิ์ทดลอง 15 นาทีไปแล้ว กรุณาจองนัด 30 นาทีแบบชำระเงิน"
-            )
+        if self.db.email_has_used_trial(email, service_type):
+            raise TrialAlreadyUsedError(trial_already_used_message(service_type))
         start = self._validate_slot(slot_start, "trial", now)
         end = start + TRIAL_DURATION
         conflict, check_failed = self._calendar_conflicts(start, end)
@@ -318,25 +349,28 @@ class BookingService:
             slot_end=end,
             session_kind="trial",
             status="confirmed",
+            service_type=service_type,
         )
         synced, pending = self._sync_to_calendar(booking, check_failed)
+        role_en = service_label(service_type, "en").lower()
+        role_th = service_label(service_type, "th")
         if synced:
             message_en = (
-                "Your free 15-minute trial is booked and was added to the coach's calendar. "
-                "Your details are visible only to the coach."
+                f"Your free 15-minute trial is booked and was added to the {role_en}'s calendar. "
+                f"Your details are visible only to the {role_en}."
             )
             message_th = (
-                "จองทดลองใช้ 15 นาทีเรียบร้อยแล้ว และได้บันทึกลงปฏิทินของโค้ชแล้ว "
-                "ข้อมูลของคุณมีเพียงโค้ชที่เห็น"
+                f"จองทดลองใช้ 15 นาทีเรียบร้อยแล้ว และได้บันทึกลงปฏิทินของ{role_th}แล้ว "
+                f"ข้อมูลของคุณมีเพียง{role_th}ที่เห็น"
             )
         else:
             message_en = (
                 "Your free 15-minute trial is booked and saved. Calendar sync is pending — "
-                "it has not been added to the coach's calendar yet."
+                f"it has not been added to the {role_en}'s calendar yet."
             )
             message_th = (
                 "จองทดลองใช้ 15 นาทีและบันทึกไว้แล้ว การซิงค์ปฏิทินยังค้างอยู่ "
-                "ยังไม่ได้เพิ่มนัดนี้ลงปฏิทินของโค้ช"
+                f"ยังไม่ได้เพิ่มนัดนี้ลงปฏิทินของ{role_th}"
             )
         return BookingResult(
             booking=booking,
@@ -357,6 +391,7 @@ class BookingService:
         now: Optional[datetime] = None,
         success_url: Optional[str] = None,
         cancel_url: Optional[str] = None,
+        service_type: str = "coach",
     ) -> BookingResult:
         """Hold the slot and create a Stripe Checkout Session. Do not confirm yet."""
         errors = validate_booking_form(name, email, topic)
@@ -378,6 +413,7 @@ class BookingService:
             now = now.replace(tzinfo=BANGKOK)
         else:
             now = now.astimezone(BANGKOK)
+        service_type = normalize_service_type(service_type)
         start = self._validate_slot(slot_start, "paid", now)
         end = start + PAID_DURATION
         conflict, check_failed = self._calendar_conflicts(start, end)
@@ -394,6 +430,7 @@ class BookingService:
             session_kind="paid",
             status="pending",
             hold_expires_at=hold_expires,
+            service_type=service_type,
         )
 
         public = get_public_return_url()
@@ -418,6 +455,7 @@ class BookingService:
                 cancel_url=cancel_url,
                 price_thb=get_session_price_thb(),
                 placeholder=is_price_placeholder(),
+                service_type=service_type,
             )
         except Exception:
             self.db.release_hold(booking.id)

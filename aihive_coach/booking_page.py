@@ -1,4 +1,7 @@
-"""Book a session / นัดหมาย — trial (15 min, free, once per email) and paid (30 min)."""
+"""Book a session / นัดหมาย — trial (15 min, free, once per email per service) and paid (30 min).
+
+Coach and Tutor share this page and the same slot pool / calendar.
+"""
 from __future__ import annotations
 
 import html
@@ -14,6 +17,8 @@ from booking import (
     TRIAL_DURATION,
     TrialAlreadyUsedError,
     generate_slots_for_date,
+    normalize_service_type,
+    service_label,
     validate_booking_form,
 )
 from caldav_client import is_caldav_configured
@@ -70,8 +75,13 @@ def _handle_checkout_return(service: BookingService) -> None:
             st.rerun()
 
 
-def show_booking_page():
-    """Customer page to book a Coach trial or paid session (19:00–21:00, Asia/Bangkok)."""
+def show_booking_page(service_type: str = "coach"):
+    """Customer page to book a Coach or Tutor trial or paid session (19:00–21:00, Asia/Bangkok)."""
+    service_type = normalize_service_type(service_type)
+    role_en = service_label(service_type, "en")
+    role_th = service_label(service_type, "th")
+    role_en_l = role_en.lower()
+    key_prefix = f"booking_{service_type}"
     st.markdown(
         """
         <style>
@@ -87,28 +97,57 @@ def show_booking_page():
     with st.expander("📱 Quick Navigation", expanded=False):
         col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("🏠 Home", key="booking_nav_home", use_container_width=True):
+            if st.button("🏠 Home", key=f"{key_prefix}_nav_home", use_container_width=True):
                 st.session_state.navigation = "Home"
                 st.rerun()
         with col2:
-            if st.button("💡 Coach", key="booking_nav_coach", use_container_width=True):
-                st.session_state.navigation = "AIHive Coach"
-                st.rerun()
+            if service_type == "tutor":
+                if st.button("📚 Tutor", key=f"{key_prefix}_nav_tutor", use_container_width=True):
+                    st.session_state.navigation = "Start Learning"
+                    st.rerun()
+            else:
+                if st.button("💡 Coach", key=f"{key_prefix}_nav_coach", use_container_width=True):
+                    st.session_state.navigation = "AIHive Coach"
+                    st.rerun()
         with col3:
-            if st.button("💬 Coaching", key="booking_nav_coaching", use_container_width=True):
-                st.session_state.navigation = "Start Coaching"
-                st.rerun()
+            if service_type == "tutor":
+                if st.button("📖 Sessions", key=f"{key_prefix}_nav_sessions", use_container_width=True):
+                    st.session_state.navigation = "My Study Sessions"
+                    st.rerun()
+            else:
+                if st.button("💬 Coaching", key=f"{key_prefix}_nav_coaching", use_container_width=True):
+                    st.session_state.navigation = "Start Coaching"
+                    st.rerun()
 
     st.title("📅 Book a session / นัดหมาย")
-    st.caption("AIHive Coach · 19:00–21:00 (เวลาไทย, ICT / Asia/Bangkok)")
+    st.caption(f"AIHive {role_en} · 19:00–21:00 (เวลาไทย, ICT / Asia/Bangkok)")
 
+    if service_type == "tutor":
+        intro_en = (
+            "Reserve a live tutoring session with Rungnapa. "
+            "Choose a free 15-minute trial (once per email for Tutor) or a paid 30-minute session."
+        )
+        intro_th = (
+            "คุณสามารถจองทดลองใช้ฟรี 15 นาทีกับติวเตอร์ (อีเมลละครั้งต่อบริการ) "
+            "หรือนัด 30 นาทีแบบชำระเงิน ได้ทุกวัน ช่วง 19:00–21:00"
+        )
+    else:
+        intro_en = (
+            "Reserve a live coaching session with Rungnapa. "
+            "Choose a free 15-minute trial (once per email for Coach) or a paid 30-minute session."
+        )
+        intro_th = (
+            "คุณสามารถจองทดลองใช้ฟรี 15 นาทีกับโค้ช (อีเมลละครั้งต่อบริการ) "
+            "หรือนัด 30 นาทีแบบชำระเงิน ได้ทุกวัน ช่วง 19:00–21:00"
+        )
     st.markdown(
-        """
+        f"""
         <div class='card'>
-        <p>Reserve a live coaching session with Rungnapa.
-        Choose a free 15-minute trial (once per email) or a paid 30-minute session.
-        คุณสามารถจองทดลองใช้ฟรี 15 นาที (อีเมลละครั้ง) หรือนัด 30 นาทีแบบชำระเงิน ได้ทุกวัน ช่วง 19:00–21:00</p>
+        <p>{intro_en}
+        {intro_th}</p>
         <p style='margin-bottom:0;color:#94a3b8;font-size:0.95rem;'>
+        Coach and Tutor share the same calendar and time slots — a time booked in either is busy in both.
+        โค้ชและติวเตอร์ใช้ปฏิทินและช่วงเวลาเดียวกัน เวลาที่ถูกจองในหน้าหนึ่งจะไม่ว่างในอีกหน้า
         Other customers only see free or busy times — never your name, email, or topic.
         ลูกค้าคนอื่นเห็นได้เฉพาะช่วงว่างหรือไม่ว่าง ไม่เห็นชื่อ อีเมล หรือหัวข้อของคุณ
         </p>
@@ -119,15 +158,15 @@ def show_booking_page():
 
     if is_caldav_configured():
         st.info(
-            "Confirmed bookings are added to the coach's calendar. "
-            "ระบบจะบันทึกนัดลงปฏิทินของโค้ชเมื่อการจองได้รับการยืนยัน"
+            f"Confirmed bookings are added to the {role_en_l}'s calendar. "
+            f"ระบบจะบันทึกนัดลงปฏิทินของ{role_th}เมื่อการจองได้รับการยืนยัน"
         )
     else:
         st.warning(
             "You can book a time now. It will be saved here, and **calendar sync is pending** "
-            "until the coach's calendar is connected. We will not claim it was added to the calendar yet. "
+            f"until the {role_en_l}'s calendar is connected. We will not claim it was added to the calendar yet. "
             "/ คุณจองเวลาได้เลย ระบบจะบันทึกนัดไว้ก่อน การซิงค์ปฏิทินยังค้างอยู่ "
-            "จนกว่าจะเชื่อมปฏิทินของโค้ช จะยังไม่ยืนยันว่าขึ้นในปฏิทินแล้ว"
+            f"จนกว่าจะเชื่อมปฏิทินของ{role_th} จะยังไม่ยืนยันว่าขึ้นในปฏิทินแล้ว"
         )
 
     service = BookingService(db)
@@ -163,7 +202,7 @@ def show_booking_page():
             if k == "trial"
             else "💳 Paid 30-minute session / นัด 30 นาที (ชำระเงิน)"
         ),
-        key="booking_kind",
+        key=f"{key_prefix}_kind",
         horizontal=False,
     )
     duration = TRIAL_DURATION if kind_label == "trial" else PAID_DURATION
@@ -182,19 +221,19 @@ def show_booking_page():
                 "/ ยังไม่เปิดรับชำระเงิน ระบบจะไม่ยืนยันนัดแบบชำระเงิน"
             )
 
-    name = st.text_input("Name / ชื่อ", max_chars=200, key="booking_name")
-    email = st.text_input("Email / อีเมล", max_chars=254, key="booking_email")
+    name = st.text_input("Name / ชื่อ", max_chars=200, key=f"{key_prefix}_name")
+    email = st.text_input("Email / อีเมล", max_chars=254, key=f"{key_prefix}_email")
     topic = st.text_input(
         "Topic (optional) / หัวข้อ (ไม่บังคับ)",
         max_chars=500,
-        key="booking_topic",
+        key=f"{key_prefix}_topic",
     )
     chosen_date = st.date_input(
         "Date / วันที่",
         value=today,
         min_value=today,
         max_value=max_day,
-        key="booking_date",
+        key=f"{key_prefix}_date",
     )
 
     slots, calendar_warning = service.available_slots(chosen_date, kind=kind_label)
@@ -216,7 +255,7 @@ def show_booking_page():
             "Available times / ช่วงเวลาที่ว่าง (เวลาไทย, ICT)",
             options=slots,
             format_func=lambda s, d=duration: _format_slot(s, d),
-            key=f"booking_slot_{kind_label}",
+            key=f"{key_prefix}_slot_{kind_label}",
         )
 
     if kind_label == "trial":
@@ -226,7 +265,7 @@ def show_booking_page():
         submit_label = "Pay and hold this time / ชำระเงินและกันเวลาไว้"
         disabled = selected is None or not is_payments_enabled()
 
-    if st.button(submit_label, type="primary", disabled=disabled, key="booking_submit"):
+    if st.button(submit_label, type="primary", disabled=disabled, key=f"{key_prefix}_submit"):
         form_errors = validate_booking_form(name, email, topic)
         if form_errors:
             for err in form_errors:
@@ -238,6 +277,7 @@ def show_booking_page():
                     email=email,
                     topic=topic,
                     slot_start=selected,
+                    service_type=service_type,
                 )
             except TrialAlreadyUsedError as exc:
                 st.error(str(exc))
@@ -259,6 +299,7 @@ def show_booking_page():
                         email=email,
                         topic=topic,
                         slot_start=selected,
+                        service_type=service_type,
                     )
                 except PaymentsNotEnabledError as exc:
                     st.error(str(exc))
@@ -272,14 +313,14 @@ def show_booking_page():
                     st.rerun()
 
     result = st.session_state.get("booking_confirmation")
-    if result is not None:
+    if result is not None and getattr(result.booking, "service_type", "coach") == service_type:
         booking = result.booking
         local = booking.slot_start.astimezone(BANGKOK)
         end = booking.slot_end.astimezone(BANGKOK)
         kind_name = (
-            "Free 15-minute trial / ทดลองใช้ฟรี 15 นาที"
+            f"Free 15-minute {role_en} trial / ทดลองใช้ฟรี 15 นาที ({role_th})"
             if result.kind == "trial"
-            else "Paid 30-minute session / นัด 30 นาที (ชำระแล้ว)"
+            else f"Paid 30-minute {role_en} session / นัด 30 นาที ({role_th}, ชำระแล้ว)"
         )
         st.success(result.message_en + " / " + result.message_th)
         safe_name = html.escape(booking.customer_name)
@@ -289,6 +330,7 @@ def show_booking_page():
             f"""
             <div class='card'>
             <h3>Confirmation / ยืนยันการนัดหมาย</h3>
+            <p><strong>Service / บริการ:</strong> {role_en} / {role_th}</p>
             <p><strong>Type / ประเภท:</strong> {kind_name}</p>
             <p><strong>Date / วันที่:</strong> {local.strftime('%A %d %B %Y')}</p>
             <p><strong>Time / เวลา:</strong> {local.strftime('%H:%M')}–{end.strftime('%H:%M')} (เวลาไทย, ICT)</p>
@@ -296,13 +338,13 @@ def show_booking_page():
             <p><strong>Email / อีเมล:</strong> {safe_email}</p>
             <p><strong>Topic / หัวข้อ:</strong> {safe_topic}</p>
             <p style='margin-bottom:0;color:#94a3b8;'>
-            Status: {'Added to the coach calendar' if result.calendar_synced else 'Saved locally · calendar sync pending / บันทึกแล้ว · การซิงค์ปฏิทินยังค้างอยู่'}
+            Status: {'Added to the calendar' if result.calendar_synced else 'Saved locally · calendar sync pending / บันทึกแล้ว · การซิงค์ปฏิทินยังค้างอยู่'}
             </p>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("Book another time / จองเวลาอื่น", key="booking_another"):
+        if st.button("Book another time / จองเวลาอื่น", key=f"{key_prefix}_another"):
             st.session_state.booking_confirmation = None
             st.session_state.booking_notice = None
             st.rerun()

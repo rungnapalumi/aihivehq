@@ -67,18 +67,20 @@ class DBAPIUsageLog(Base):
 
 
 class DBCoachBooking(Base):
-    """Persisted Coach session booking.
+    """Persisted Coach or Tutor session booking (one shared table and slot pool).
 
     slot_key is unique among *active* rows because expired holds are deleted.
-    A partial unique index enforces one free trial per email.
-    Interval overlap is also checked in application code (15- and 30-minute slots share the evening window).
+    A partial unique index enforces one free trial per email per service (coach/tutor).
+    Coach and Tutor share the same calendar and evening window, so overlap is
+    checked across both services in application code.
     """
     __tablename__ = "coach_bookings"
     __table_args__ = (
         UniqueConstraint("slot_key", name="uq_coach_bookings_slot_key"),
         Index(
-            "uq_coach_bookings_trial_email",
+            "uq_coach_bookings_trial_email_service",
             "customer_email_normalized",
+            "service_type",
             unique=True,
             sqlite_where=text("session_kind = 'trial' AND status IN ('pending', 'confirmed')"),
         ),
@@ -95,6 +97,7 @@ class DBCoachBooking(Base):
     created_at = Column(DateTime, nullable=False)
     calendar_uid = Column(String, nullable=True)
     calendar_synced = Column(Boolean, default=False)
+    service_type = Column(String, nullable=False, default="coach")
     session_kind = Column(String, nullable=False, default="paid")
     status = Column(String, nullable=False, default="confirmed")
     hold_expires_at = Column(DateTime, nullable=True)
@@ -416,6 +419,7 @@ class Database:
         statements = []
         wanted = {
             "customer_email_normalized": "ALTER TABLE coach_bookings ADD COLUMN customer_email_normalized VARCHAR DEFAULT ''",
+            "service_type": "ALTER TABLE coach_bookings ADD COLUMN service_type VARCHAR DEFAULT 'coach'",
             "session_kind": "ALTER TABLE coach_bookings ADD COLUMN session_kind VARCHAR DEFAULT 'paid'",
             "status": "ALTER TABLE coach_bookings ADD COLUMN status VARCHAR DEFAULT 'confirmed'",
             "hold_expires_at": "ALTER TABLE coach_bookings ADD COLUMN hold_expires_at DATETIME",
@@ -426,9 +430,12 @@ class Database:
         for name, sql in wanted.items():
             if name not in existing:
                 statements.append(sql)
+        # Always migrate the trial-email unique index to include service_type
+        # (Coach and Tutor each get one free trial per email).
+        statements.append("DROP INDEX IF EXISTS uq_coach_bookings_trial_email")
         statements.append(
-            "CREATE UNIQUE INDEX IF NOT EXISTS uq_coach_bookings_trial_email "
-            "ON coach_bookings (customer_email_normalized) "
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_coach_bookings_trial_email_service "
+            "ON coach_bookings (customer_email_normalized, service_type) "
             "WHERE session_kind = 'trial' AND status IN ('pending', 'confirmed')"
         )
         if statements:
@@ -440,6 +447,11 @@ class Database:
                     conn.exec_driver_sql(
                         "UPDATE coach_bookings SET customer_email_normalized = lower(trim(customer_email)) "
                         "WHERE customer_email_normalized IS NULL OR customer_email_normalized = ''"
+                    )
+                if "service_type" not in existing:
+                    conn.exec_driver_sql(
+                        "UPDATE coach_bookings SET service_type = 'coach' "
+                        "WHERE service_type IS NULL OR service_type = ''"
                     )
 
     def _as_naive_utc(self, value: datetime) -> datetime:
@@ -488,13 +500,14 @@ class Database:
         finally:
             db.close()
 
-    def email_has_used_trial(self, email: str) -> bool:
-        from booking import normalize_email
+    def email_has_used_trial(self, email: str, service_type: str = "coach") -> bool:
+        from booking import normalize_email, normalize_service_type
 
         self.release_expired_holds()
         key = normalize_email(email)
         if not key:
             return False
+        service_type = normalize_service_type(service_type)
         db = self._get_session()
         try:
             row = (
@@ -503,6 +516,7 @@ class Database:
                     DBCoachBooking.session_kind == "trial",
                     DBCoachBooking.status.in_(("pending", "confirmed")),
                     DBCoachBooking.customer_email_normalized == key,
+                    DBCoachBooking.service_type == service_type,
                 )
                 .first()
             )
@@ -559,9 +573,16 @@ class Database:
         status: str = "confirmed",
         hold_expires_at: Optional[datetime] = None,
         stripe_checkout_session_id: Optional[str] = None,
+        service_type: str = "coach",
     ) -> CoachBooking:
         """Save a booking. Raises SlotUnavailableError or TrialAlreadyUsedError."""
-        from booking import TrialAlreadyUsedError, normalize_email, slot_key as make_slot_key
+        from booking import (
+            TrialAlreadyUsedError,
+            normalize_email,
+            normalize_service_type,
+            slot_key as make_slot_key,
+            trial_already_used_message,
+        )
         from caldav_client import slot_overlaps_busy
 
         self.release_expired_holds()
@@ -569,6 +590,7 @@ class Database:
         start_utc = self._as_naive_utc(slot_start)
         end_utc = self._as_naive_utc(slot_end)
         email_key = normalize_email(customer_email)
+        service_type = normalize_service_type(service_type)
         duration_minutes = int((slot_end - slot_start).total_seconds() // 60)
         booking = CoachBooking(
             customer_name=customer_name,
@@ -577,6 +599,7 @@ class Database:
             slot_key=key,
             slot_start=slot_start,
             slot_end=slot_end,
+            service_type=service_type,
             session_kind=session_kind,
             status=status,
             hold_expires_at=hold_expires_at,
@@ -592,15 +615,12 @@ class Database:
                         DBCoachBooking.session_kind == "trial",
                         DBCoachBooking.status.in_(("pending", "confirmed")),
                         DBCoachBooking.customer_email_normalized == email_key,
+                        DBCoachBooking.service_type == service_type,
                     )
                     .first()
                 )
                 if existing_trial:
-                    raise TrialAlreadyUsedError(
-                        "This email has already used the free 15-minute trial. "
-                        "Please book a paid 30-minute session. "
-                        "/ อีเมลนี้ใช้สิทธิ์ทดลอง 15 นาทีไปแล้ว กรุณาจองนัด 30 นาทีแบบชำระเงิน"
-                    )
+                    raise TrialAlreadyUsedError(trial_already_used_message(service_type))
             # Overlap with any active booking (15- and 30-minute slots share the window)
             now_utc = self._as_naive_utc(datetime.now(timezone.utc))
             active = (
@@ -640,6 +660,7 @@ class Database:
                 created_at=booking.created_at.replace(tzinfo=None) if booking.created_at.tzinfo else booking.created_at,
                 calendar_uid=None,
                 calendar_synced=False,
+                service_type=service_type,
                 session_kind=session_kind,
                 status=status,
                 hold_expires_at=self._as_naive_utc(hold_expires_at) if hold_expires_at else None,
@@ -652,12 +673,8 @@ class Database:
         except IntegrityError:
             db.rollback()
             # Distinguish trial-email uniqueness from slot uniqueness when possible.
-            if session_kind == "trial" and self.email_has_used_trial(customer_email):
-                raise TrialAlreadyUsedError(
-                    "This email has already used the free 15-minute trial. "
-                    "Please book a paid 30-minute session. "
-                    "/ อีเมลนี้ใช้สิทธิ์ทดลอง 15 นาทีไปแล้ว กรุณาจองนัด 30 นาทีแบบชำระเงิน"
-                ) from None
+            if session_kind == "trial" and self.email_has_used_trial(customer_email, service_type):
+                raise TrialAlreadyUsedError(trial_already_used_message(service_type)) from None
             raise SlotUnavailableError("That time is no longer available / ช่วงเวลานี้ถูกจองแล้ว") from None
         finally:
             db.close()
@@ -783,6 +800,7 @@ class Database:
             created_at=created,
             calendar_uid=row.calendar_uid,
             calendar_synced=bool(row.calendar_synced),
+            service_type=getattr(row, "service_type", None) or "coach",
             session_kind=row.session_kind or "paid",
             status=row.status or "confirmed",
             hold_expires_at=hold,

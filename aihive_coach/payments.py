@@ -1,4 +1,4 @@
-"""Stripe Checkout helpers for paid Coach sessions.
+"""Stripe Checkout helpers for paid Coach and Tutor sessions.
 
 Test mode only unless AIHIVE_PAYMENTS_LIVE=true. The secret key is read
 from the environment when needed and is never stored on Config, logged,
@@ -162,14 +162,16 @@ class StripeCheckoutClient:
         cancel_url: str,
         price_thb: int,
         placeholder: bool,
+        service_type: str = "coach",
     ) -> CheckoutSessionInfo:
         key = require_usable_stripe_key()
-        product_name = "AIHive Coach session (30 minutes)"
-        description = "Live coaching session with Rungnapa Mukdasanit"
+        label = "Tutor" if (service_type or "coach").strip().lower() == "tutor" else "Coach"
+        product_name = f"AIHive {label} session (30 minutes)"
+        description = f"Live {label.lower()} session with Rungnapa Mukdasanit"
         if placeholder:
             description = (
                 "Placeholder price — not yet decided. "
-                "AIHive Coach 30-minute session."
+                f"AIHive {label} 30-minute session."
             )
         try:
             import stripe
@@ -184,6 +186,7 @@ class StripeCheckoutClient:
                 metadata={
                     "booking_id": booking_id,
                     "session_kind": "paid",
+                    "service_type": "tutor" if (service_type or "coach").strip().lower() == "tutor" else "coach",
                 },
                 expires_at=None,  # Stripe minimum is 30 minutes; we enforce a 15-min hold ourselves
                 line_items=[

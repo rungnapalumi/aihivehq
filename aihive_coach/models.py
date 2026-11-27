@@ -89,7 +89,7 @@ class SlotUnavailableError(Exception):
 
 
 class CoachBooking(BaseModel):
-    """A booked Coach session (15-minute trial or 30-minute paid)."""
+    """A booked Coach or Tutor session (15-minute trial or 30-minute paid)."""
     model_config = ConfigDict(ser_json_timedelta='iso8601')
 
     id: str = Field(default_factory=lambda: str(uuid4()))
@@ -102,6 +102,7 @@ class CoachBooking(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     calendar_uid: Optional[str] = None
     calendar_synced: bool = False
+    service_type: str = "coach"  # coach | tutor
     session_kind: str = "paid"  # trial | paid
     status: str = "confirmed"  # pending | confirmed | expired
     hold_expires_at: Optional[datetime] = None
