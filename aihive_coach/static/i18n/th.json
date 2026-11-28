@@ -2,6 +2,19 @@
   "site_title": "AIHiveHQ",
   "site_tagline": "คิดอย่างชัดเจน ทำอย่างมั่นใจ เติบโตทุกวัน",
   "product_name": "AIHive Coach",
-  
-  "note": "Thai translations are placeholders for future i18n support"
+  "note": "Thai translations are placeholders for future i18n support",
+  "nav": {
+    "booking": "นัดหมาย"
+  },
+  "booking": {
+    "title": "นัดหมาย",
+    "caption": "ครั้งละ 30 นาที 19:00–21:00 เวลาไทย",
+    "name_label": "ชื่อ",
+    "email_label": "อีเมล",
+    "topic_label": "หัวข้อ (ไม่บังคับ)",
+    "date_label": "วันที่",
+    "slots_label": "ช่วงเวลาที่ว่าง (เวลาไทย)",
+    "submit": "จองนัด",
+    "sync_pending": "การซิงค์ปฏิทินยังค้างอยู่"
+  }
 }

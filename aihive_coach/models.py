@@ -82,3 +82,31 @@ class APIUsageLog(BaseModel):
     completion_tokens: int
     total_tokens: int
     estimated_cost_usd: float
+
+
+class SlotUnavailableError(Exception):
+    """Raised when a requested booking slot is no longer available."""
+
+
+class CoachBooking(BaseModel):
+    """A booked Coach or Tutor session (15-minute trial or 30-minute paid)."""
+    model_config = ConfigDict(ser_json_timedelta='iso8601')
+
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    customer_name: str
+    customer_email: str
+    topic: Optional[str] = None
+    slot_key: str
+    slot_start: datetime
+    slot_end: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    calendar_uid: Optional[str] = None
+    calendar_synced: bool = False
+    service_type: str = "coach"  # coach | tutor
+    session_kind: str = "paid"  # trial | paid
+    status: str = "confirmed"  # pending | confirmed | expired
+    hold_expires_at: Optional[datetime] = None
+    stripe_checkout_session_id: Optional[str] = None
+    stripe_payment_intent_id: Optional[str] = None
+    duration_minutes: int = 30
+

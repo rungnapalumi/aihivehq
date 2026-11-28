@@ -4,12 +4,13 @@ Uses SQLite for development with SQLAlchemy ORM
 Implements user isolation and privacy
 """
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import List, Optional
-from sqlalchemy import create_engine, Column, String, Text, Boolean, Integer, Float, DateTime, Date, ForeignKey
+from sqlalchemy import create_engine, Column, String, Text, Boolean, Integer, Float, DateTime, Date, ForeignKey, UniqueConstraint, Index, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker, relationship, Session, declarative_base
 from config import config
-from models import CoachingSession, ActionPlan, Message, APIUsageLog
+from models import CoachingSession, ActionPlan, Message, APIUsageLog, CoachBooking, SlotUnavailableError
 
 Base = declarative_base()
 
@@ -64,6 +65,47 @@ class DBAPIUsageLog(Base):
     estimated_cost_usd = Column(Float, nullable=False)
 
 
+
+class DBCoachBooking(Base):
+    """Persisted Coach or Tutor session booking (one shared table and slot pool).
+
+    slot_key is unique among *active* rows because expired holds are deleted.
+    A partial unique index enforces one free trial per email per service (coach/tutor).
+    Coach and Tutor share the same calendar and evening window, so overlap is
+    checked across both services in application code.
+    """
+    __tablename__ = "coach_bookings"
+    __table_args__ = (
+        UniqueConstraint("slot_key", name="uq_coach_bookings_slot_key"),
+        Index(
+            "uq_coach_bookings_trial_email_service",
+            "customer_email_normalized",
+            "service_type",
+            unique=True,
+            sqlite_where=text("session_kind = 'trial' AND status IN ('pending', 'confirmed')"),
+        ),
+    )
+
+    id = Column(String, primary_key=True)
+    customer_name = Column(String, nullable=False)
+    customer_email = Column(String, nullable=False)
+    customer_email_normalized = Column(String, nullable=False, default="")
+    topic = Column(Text, nullable=True)
+    slot_key = Column(String, nullable=False)
+    slot_start_utc = Column(DateTime, nullable=False)
+    slot_end_utc = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    calendar_uid = Column(String, nullable=True)
+    calendar_synced = Column(Boolean, default=False)
+    service_type = Column(String, nullable=False, default="coach")
+    session_kind = Column(String, nullable=False, default="paid")
+    status = Column(String, nullable=False, default="confirmed")
+    hold_expires_at = Column(DateTime, nullable=True)
+    stripe_checkout_session_id = Column(String, nullable=True)
+    stripe_payment_intent_id = Column(String, nullable=True)
+    duration_minutes = Column(Integer, nullable=False, default=30)
+
+
 class Database:
     """Database manager with privacy and isolation"""
     
@@ -71,6 +113,7 @@ class Database:
         self.db_path = db_path or config.DATABASE_PATH
         self.engine = create_engine(f"sqlite:///{self.db_path}", echo=False)
         Base.metadata.create_all(self.engine)
+        self._ensure_booking_schema()
         self.SessionLocal = sessionmaker(bind=self.engine)
     
     def _get_session(self) -> Session:
@@ -362,6 +405,340 @@ class Database:
         finally:
             db.close()
     
+
+    # Coach session bookings
+
+    def _ensure_booking_schema(self) -> None:
+        """Add new columns/indexes to older SQLite files (create_all does not alter)."""
+        from sqlalchemy import inspect as sa_inspect
+
+        inspector = sa_inspect(self.engine)
+        if "coach_bookings" not in inspector.get_table_names():
+            return
+        existing = {col["name"] for col in inspector.get_columns("coach_bookings")}
+        statements = []
+        wanted = {
+            "customer_email_normalized": "ALTER TABLE coach_bookings ADD COLUMN customer_email_normalized VARCHAR DEFAULT ''",
+            "service_type": "ALTER TABLE coach_bookings ADD COLUMN service_type VARCHAR DEFAULT 'coach'",
+            "session_kind": "ALTER TABLE coach_bookings ADD COLUMN session_kind VARCHAR DEFAULT 'paid'",
+            "status": "ALTER TABLE coach_bookings ADD COLUMN status VARCHAR DEFAULT 'confirmed'",
+            "hold_expires_at": "ALTER TABLE coach_bookings ADD COLUMN hold_expires_at DATETIME",
+            "stripe_checkout_session_id": "ALTER TABLE coach_bookings ADD COLUMN stripe_checkout_session_id VARCHAR",
+            "stripe_payment_intent_id": "ALTER TABLE coach_bookings ADD COLUMN stripe_payment_intent_id VARCHAR",
+            "duration_minutes": "ALTER TABLE coach_bookings ADD COLUMN duration_minutes INTEGER DEFAULT 30",
+        }
+        for name, sql in wanted.items():
+            if name not in existing:
+                statements.append(sql)
+        # Always migrate the trial-email unique index to include service_type
+        # (Coach and Tutor each get one free trial per email).
+        statements.append("DROP INDEX IF EXISTS uq_coach_bookings_trial_email")
+        statements.append(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_coach_bookings_trial_email_service "
+            "ON coach_bookings (customer_email_normalized, service_type) "
+            "WHERE session_kind = 'trial' AND status IN ('pending', 'confirmed')"
+        )
+        if statements:
+            with self.engine.begin() as conn:
+                for sql in statements:
+                    conn.exec_driver_sql(sql)
+                # Backfill normalized emails if the column was just added.
+                if "customer_email_normalized" not in existing:
+                    conn.exec_driver_sql(
+                        "UPDATE coach_bookings SET customer_email_normalized = lower(trim(customer_email)) "
+                        "WHERE customer_email_normalized IS NULL OR customer_email_normalized = ''"
+                    )
+                if "service_type" not in existing:
+                    conn.exec_driver_sql(
+                        "UPDATE coach_bookings SET service_type = 'coach' "
+                        "WHERE service_type IS NULL OR service_type = ''"
+                    )
+
+    def _as_naive_utc(self, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+    def _as_bangkok(self, value: datetime) -> datetime:
+        from zoneinfo import ZoneInfo
+        bangkok = ZoneInfo("Asia/Bangkok")
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(bangkok)
+
+    def release_expired_holds(self, now: Optional[datetime] = None) -> int:
+        """Delete expired pending paid holds so the slot can be booked again."""
+        now = now or datetime.now(timezone.utc)
+        now_utc = self._as_naive_utc(now)
+        db = self._get_session()
+        try:
+            rows = (
+                db.query(DBCoachBooking)
+                .filter(
+                    DBCoachBooking.status == "pending",
+                    DBCoachBooking.hold_expires_at.isnot(None),
+                    DBCoachBooking.hold_expires_at <= now_utc,
+                )
+                .all()
+            )
+            count = len(rows)
+            for row in rows:
+                db.delete(row)
+            db.commit()
+            return count
+        finally:
+            db.close()
+
+    def release_hold(self, booking_id: str) -> None:
+        """Drop a pending hold (cancel or failed checkout). Confirmed rows are left alone."""
+        db = self._get_session()
+        try:
+            row = db.query(DBCoachBooking).filter(DBCoachBooking.id == booking_id).first()
+            if row is not None and row.status == "pending":
+                db.delete(row)
+                db.commit()
+        finally:
+            db.close()
+
+    def email_has_used_trial(self, email: str, service_type: str = "coach") -> bool:
+        from booking import normalize_email, normalize_service_type
+
+        self.release_expired_holds()
+        key = normalize_email(email)
+        if not key:
+            return False
+        service_type = normalize_service_type(service_type)
+        db = self._get_session()
+        try:
+            row = (
+                db.query(DBCoachBooking.id)
+                .filter(
+                    DBCoachBooking.session_kind == "trial",
+                    DBCoachBooking.status.in_(("pending", "confirmed")),
+                    DBCoachBooking.customer_email_normalized == key,
+                    DBCoachBooking.service_type == service_type,
+                )
+                .first()
+            )
+            return row is not None
+        finally:
+            db.close()
+
+    def list_occupied_intervals(
+        self,
+        range_start: datetime,
+        range_end: datetime,
+        now: Optional[datetime] = None,
+        exclude_booking_id: Optional[str] = None,
+    ):
+        """Return (start, end) of confirmed bookings and unexpired holds. No customer details."""
+        self.release_expired_holds(now=now)
+        start_utc = self._as_naive_utc(range_start)
+        end_utc = self._as_naive_utc(range_end)
+        now_utc = self._as_naive_utc(now or datetime.now(timezone.utc))
+        db = self._get_session()
+        try:
+            query = db.query(DBCoachBooking.slot_start_utc, DBCoachBooking.slot_end_utc, DBCoachBooking.id).filter(
+                DBCoachBooking.slot_start_utc < end_utc,
+                DBCoachBooking.slot_end_utc > start_utc,
+                (
+                    (DBCoachBooking.status == "confirmed")
+                    | (
+                        (DBCoachBooking.status == "pending")
+                        & (
+                            (DBCoachBooking.hold_expires_at.is_(None))
+                            | (DBCoachBooking.hold_expires_at > now_utc)
+                        )
+                    )
+                ),
+            )
+            if exclude_booking_id:
+                query = query.filter(DBCoachBooking.id != exclude_booking_id)
+            rows = query.all()
+            intervals = []
+            for start, end, _id in rows:
+                intervals.append((self._as_bangkok(start), self._as_bangkok(end)))
+            return intervals
+        finally:
+            db.close()
+
+    def create_booking(
+        self,
+        customer_name: str,
+        customer_email: str,
+        topic: Optional[str],
+        slot_start: datetime,
+        slot_end: datetime,
+        session_kind: str = "paid",
+        status: str = "confirmed",
+        hold_expires_at: Optional[datetime] = None,
+        stripe_checkout_session_id: Optional[str] = None,
+        service_type: str = "coach",
+    ) -> CoachBooking:
+        """Save a booking. Raises SlotUnavailableError or TrialAlreadyUsedError."""
+        from booking import (
+            TrialAlreadyUsedError,
+            normalize_email,
+            normalize_service_type,
+            slot_key as make_slot_key,
+            trial_already_used_message,
+        )
+        from caldav_client import slot_overlaps_busy
+
+        self.release_expired_holds()
+        key = make_slot_key(slot_start)
+        start_utc = self._as_naive_utc(slot_start)
+        end_utc = self._as_naive_utc(slot_end)
+        email_key = normalize_email(customer_email)
+        service_type = normalize_service_type(service_type)
+        duration_minutes = int((slot_end - slot_start).total_seconds() // 60)
+        booking = CoachBooking(
+            customer_name=customer_name,
+            customer_email=customer_email,
+            topic=topic,
+            slot_key=key,
+            slot_start=slot_start,
+            slot_end=slot_end,
+            service_type=service_type,
+            session_kind=session_kind,
+            status=status,
+            hold_expires_at=hold_expires_at,
+            stripe_checkout_session_id=stripe_checkout_session_id,
+            duration_minutes=duration_minutes,
+        )
+        db = self._get_session()
+        try:
+            if session_kind == "trial" and status in {"pending", "confirmed"}:
+                existing_trial = (
+                    db.query(DBCoachBooking.id)
+                    .filter(
+                        DBCoachBooking.session_kind == "trial",
+                        DBCoachBooking.status.in_(("pending", "confirmed")),
+                        DBCoachBooking.customer_email_normalized == email_key,
+                        DBCoachBooking.service_type == service_type,
+                    )
+                    .first()
+                )
+                if existing_trial:
+                    raise TrialAlreadyUsedError(trial_already_used_message(service_type))
+            # Overlap with any active booking (15- and 30-minute slots share the window)
+            now_utc = self._as_naive_utc(datetime.now(timezone.utc))
+            active = (
+                db.query(DBCoachBooking.slot_start_utc, DBCoachBooking.slot_end_utc)
+                .filter(
+                    DBCoachBooking.slot_start_utc < end_utc,
+                    DBCoachBooking.slot_end_utc > start_utc,
+                    (
+                        (DBCoachBooking.status == "confirmed")
+                        | (
+                            (DBCoachBooking.status == "pending")
+                            & (
+                                (DBCoachBooking.hold_expires_at.is_(None))
+                                | (DBCoachBooking.hold_expires_at > now_utc)
+                            )
+                        )
+                    ),
+                )
+                .all()
+            )
+            intervals = [(self._as_bangkok(a), self._as_bangkok(b)) for a, b in active]
+            if slot_overlaps_busy(slot_start, slot_end, intervals):
+                raise SlotUnavailableError("That time is no longer available / ช่วงเวลานี้ถูกจองแล้ว")
+
+            existing = db.query(DBCoachBooking.id).filter(DBCoachBooking.slot_key == key).first()
+            if existing:
+                raise SlotUnavailableError("That time is no longer available / ช่วงเวลานี้ถูกจองแล้ว")
+            row = DBCoachBooking(
+                id=booking.id,
+                customer_name=booking.customer_name,
+                customer_email=booking.customer_email,
+                customer_email_normalized=email_key,
+                topic=booking.topic,
+                slot_key=booking.slot_key,
+                slot_start_utc=start_utc,
+                slot_end_utc=end_utc,
+                created_at=booking.created_at.replace(tzinfo=None) if booking.created_at.tzinfo else booking.created_at,
+                calendar_uid=None,
+                calendar_synced=False,
+                service_type=service_type,
+                session_kind=session_kind,
+                status=status,
+                hold_expires_at=self._as_naive_utc(hold_expires_at) if hold_expires_at else None,
+                stripe_checkout_session_id=stripe_checkout_session_id,
+                duration_minutes=duration_minutes,
+            )
+            db.add(row)
+            db.commit()
+            return booking
+        except IntegrityError:
+            db.rollback()
+            # Distinguish trial-email uniqueness from slot uniqueness when possible.
+            if session_kind == "trial" and self.email_has_used_trial(customer_email, service_type):
+                raise TrialAlreadyUsedError(trial_already_used_message(service_type)) from None
+            raise SlotUnavailableError("That time is no longer available / ช่วงเวลานี้ถูกจองแล้ว") from None
+        finally:
+            db.close()
+
+    def list_booked_slot_starts(self, range_start: datetime, range_end: datetime):
+        """Return occupied slot starts in range. No customer details."""
+        return [start for start, _end in self.list_occupied_intervals(range_start, range_end)]
+
+    def update_booking_calendar_sync(self, booking_id: str, calendar_uid: Optional[str], synced: bool) -> None:
+        db = self._get_session()
+        try:
+            row = db.query(DBCoachBooking).filter(DBCoachBooking.id == booking_id).first()
+            if row is None:
+                return
+            row.calendar_uid = calendar_uid
+            row.calendar_synced = synced
+            db.commit()
+        finally:
+            db.close()
+
+    def update_booking_checkout(self, booking_id: str, stripe_checkout_session_id: str) -> None:
+        db = self._get_session()
+        try:
+            row = db.query(DBCoachBooking).filter(DBCoachBooking.id == booking_id).first()
+            if row is None:
+                return
+            row.stripe_checkout_session_id = stripe_checkout_session_id
+            db.commit()
+        finally:
+            db.close()
+
+    def confirm_paid_booking(
+        self,
+        booking_id: str,
+        stripe_checkout_session_id: Optional[str] = None,
+        stripe_payment_intent_id: Optional[str] = None,
+    ) -> CoachBooking:
+        db = self._get_session()
+        try:
+            row = db.query(DBCoachBooking).filter(DBCoachBooking.id == booking_id).first()
+            if row is None:
+                raise ValueError("booking not found")
+            row.status = "confirmed"
+            row.hold_expires_at = None
+            if stripe_checkout_session_id:
+                row.stripe_checkout_session_id = stripe_checkout_session_id
+            if stripe_payment_intent_id:
+                row.stripe_payment_intent_id = stripe_payment_intent_id
+            db.commit()
+            db.refresh(row)
+            return self._db_booking_to_model(row)
+        finally:
+            db.close()
+
+    def get_booking(self, booking_id: str) -> Optional[CoachBooking]:
+        db = self._get_session()
+        try:
+            row = db.query(DBCoachBooking).filter(DBCoachBooking.id == booking_id).first()
+            if row is None:
+                return None
+            return self._db_booking_to_model(row)
+        finally:
+            db.close()
+
     # Helper methods
     
     def _db_session_to_model(self, db_session: DBSession) -> CoachingSession:
@@ -398,6 +775,38 @@ class Database:
             is_completed=db_plan.is_completed,
             progress_notes=progress_notes,
             last_reviewed_at=db_plan.last_reviewed_at
+        )
+
+
+    def _db_booking_to_model(self, row: DBCoachBooking) -> CoachBooking:
+        from booking import slot_key as make_slot_key
+
+        start = self._as_bangkok(row.slot_start_utc)
+        end = self._as_bangkok(row.slot_end_utc)
+        created = row.created_at
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        hold = row.hold_expires_at
+        if hold is not None and hold.tzinfo is None:
+            hold = hold.replace(tzinfo=timezone.utc)
+        return CoachBooking(
+            id=row.id,
+            customer_name=row.customer_name,
+            customer_email=row.customer_email,
+            topic=row.topic,
+            slot_key=row.slot_key or make_slot_key(start),
+            slot_start=start,
+            slot_end=end,
+            created_at=created,
+            calendar_uid=row.calendar_uid,
+            calendar_synced=bool(row.calendar_synced),
+            service_type=getattr(row, "service_type", None) or "coach",
+            session_kind=row.session_kind or "paid",
+            status=row.status or "confirmed",
+            hold_expires_at=hold,
+            stripe_checkout_session_id=row.stripe_checkout_session_id,
+            stripe_payment_intent_id=row.stripe_payment_intent_id,
+            duration_minutes=row.duration_minutes or int((end - start).total_seconds() // 60),
         )
 
 
